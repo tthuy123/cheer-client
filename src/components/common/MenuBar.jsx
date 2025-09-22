@@ -19,7 +19,7 @@ export default function MenuBar() {
       elevation={1}
       sx={{
         width: "100%",
-        position: "fixed", // change to "fixed" and bottom: 0 for bottom bar
+        position: "fixed",
         bottom: 0,
         left: 0,
         right: 0,
@@ -32,8 +32,14 @@ export default function MenuBar() {
         onChange={(event, newValue) => setValue(newValue)}
         sx={{
           "& .Mui-selected": {
-            color: "green", // selected label + icon
+             // selected label + icon
+             "& .MuiBottomNavigationAction-label.Mui-selected": {
+                color: "green",
+             },
           },
+          "& .Mui-selected .MuiSvgIcon-root": {
+                color: "green", // icon
+    },
         }}
       >
         <BottomNavigationAction label="Home" icon={<HomeIcon />} />
