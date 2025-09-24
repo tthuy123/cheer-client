@@ -5,7 +5,7 @@ import {
   Paper,
 } from "@mui/material";
 
-import HomeIcon from "@mui/icons-material/Person";
+import AccountCircleOutlinedIcon from '@mui/icons-material/AccountCircleOutlined';
 import FitnessCenterIcon from "@mui/icons-material/FitnessCenter";
 import StraightenIcon from "@mui/icons-material/Straighten";
 import TrackChangesIcon from "@mui/icons-material/TrackChanges";
@@ -42,7 +42,7 @@ export default function MenuBar() {
     },
         }}
       >
-        <BottomNavigationAction label="Home" icon={<HomeIcon />} />
+        <BottomNavigationAction label="Home" icon={<AccountCircleOutlinedIcon />} />
         <BottomNavigationAction label="Training" icon={<FitnessCenterIcon />} />
         <BottomNavigationAction label="Measurement" icon={<StraightenIcon />} />
         <BottomNavigationAction label="Hit/Miss" icon={<TrackChangesIcon />} />
