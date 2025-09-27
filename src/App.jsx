@@ -22,7 +22,7 @@ function App() {
           <Route index element={<HomePage/>}/> */}
           <Route path='/login' element={<LoginPage/>}/>
         {/* </Route> */}
-          <Route path='/test' element={<MenuBar/>}/>
+          <Route path='/test' element={<LoginPage/>}/>
       </Routes>
     </BrowserRouter>
     </>
