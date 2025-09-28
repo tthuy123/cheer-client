@@ -1,7 +1,7 @@
 import React from 'react';
 import { createRoot } from 'react-dom/client';
 import { Provider } from 'react-redux';
-// import store from './redux/store'; // Adjust the import path as needed
+import store from './redux/store'; // Adjust the import path as needed
 import App from './App';
 import './index.css'
 
@@ -14,7 +14,7 @@ const root = createRoot(container);
 
 // Initial render
 root.render(
- // <Provider>
+ <Provider store={store}>
     <App />
- // </Provider>
+ </Provider>
 );

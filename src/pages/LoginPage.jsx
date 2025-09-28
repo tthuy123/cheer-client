@@ -12,19 +12,64 @@ import {
 } from "@mui/material";
 import { Visibility, VisibilityOff, LockOutlined, EmailOutlined } from "@mui/icons-material";
 
+import Account from "../api/modules/account.api";
+import { ToastContainer, toast, Slide, Zoom } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
+import {
+  setToken,
+  setRole,
+  setUserID,
+} from "../redux/store";
+import { useDispatch } from "react-redux";
+import { useNavigate } from "react-router-dom";
+
 export default function LoginPage() {
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
+
+  const handleLogin = (e) => {
+    e.preventDefault();
+    const data = {
+      email: email,
+      password: password,
+    };
+    Account.login(data).then((response) => {
+      if (!response.auth) {
+        toast.error(response.data || "Invalid credentials");
+      } else {
+        dispatch(setToken(response.token));
+        dispatch(setRole(response.role));
+        dispatch(setUserID(response.user_id));
+        if (response.role === "admin") {
+          navigate("/admin");
+        } else if (response.role === "artist") {
+          navigate("/artist");
+        } else if (response.role === "order_manager") {
+          navigate("/order_manage");
+        } else {
+          navigate("/");
+        }
+      }
+    });
+  };
 
   const handleTogglePassword = () => {
     setShowPassword((prev) => !prev);
   };
 
   return (
-    <Container maxWidth="xs" sx={{ display: "flex", flexDirection: "column", alignItems: "center", mt: 8 }}>
+    <Container
+      maxWidth="xs"
+      sx={{ display: "flex", flexDirection: "column", alignItems: "center", mt: 8 }}
+    >
       {/* Logo */}
       <Box sx={{ mb: 2 }}>
         <img
-          src="https://cheertrainer.com/logo.jpg" 
+          src="https://cheertrainer.com/logo.jpg"
           alt="Cheer Trainer Logo"
           style={{ borderRadius: "20px", width: "80px", height: "80px" }}
         />
@@ -46,6 +91,8 @@ export default function LoginPage() {
           variant="outlined"
           fullWidth
           margin="normal"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
           slotProps={{
             input: {
               startAdornment: (
@@ -62,6 +109,8 @@ export default function LoginPage() {
           variant="outlined"
           fullWidth
           margin="normal"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
           slotProps={{
             input: {
               startAdornment: (
@@ -89,6 +138,7 @@ export default function LoginPage() {
         <Button
           variant="contained"
           fullWidth
+          onClick={handleLogin}
           sx={{
             backgroundColor: "green",
             "&:hover": { backgroundColor: "darkgreen" },
@@ -106,6 +156,17 @@ export default function LoginPage() {
           Sign up
         </Link>
       </Typography>
+
+      {/* Toast */}
+      <ToastContainer
+        position="top-right"
+        autoClose={3000}
+        transition={Slide}
+        hideProgressBar={false}
+        newestOnTop
+        closeOnClick
+        pauseOnHover
+      />
     </Container>
   );
 }

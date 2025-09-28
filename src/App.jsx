@@ -30,7 +30,7 @@ function App() {
           <Route path='/home' element={<HomePage />} />
           {/* </Route> */}
           {/* các test cho các ví dụ */}
-          <Route path='/test' element={<MenuBar/>} />
+          <Route path='/test' element={<LoginPage/>} />
           <Route path='/test1' element={<TrainingBar />} />
           <Route path='/test2' element={<StrengthBar />} />
           <Route path='/test3' element={<SearchBar />} />
