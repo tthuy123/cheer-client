@@ -42,7 +42,7 @@ const AlertCard = () => {
                 </Typography>
 
                 {/* Past-Due Check-Offs Section */}
-                <Box sx={{ mb: 3 }}>
+                <Box sx={{ mb: 4  }}>
                     <Typography
                         variant="body2"
                         sx={{ color: '#e8000c', fontWeight: 'medium', mb: 1 }}
