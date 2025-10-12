@@ -1,17 +1,14 @@
-import React from 'react';
-import TrainingBar from '../../../components/Training/TrainingBar';
-import StrengthBar from '../../../components/Training/StrengthBar';
+import TrainingLayout from '../../../components/layouts/TrainingLayout';
+
 import SearchBar from '../../../components/Training/SearchBar';
 import ProgramCard from '../../../components/Training/ProgramCard';
 
 const CheerTrainer = () => {
     return (
-        <div>
-            <TrainingBar />
-            <StrengthBar />
+        <TrainingLayout>
             <SearchBar />
             <ProgramCard />
-        </div>
+        </TrainingLayout>
     );
 };
 
