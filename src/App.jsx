@@ -18,6 +18,9 @@ import ProgramCard from './components/Training/ProgramCard';
 import CreateCard from './components/Training/CreateCard';
 import CheerTrainer from './pages/Training/Strength/CheerTrainer';
 import CreateProgram from './pages/Training/Strength/CreateProgram';
+import DropSelectMeas  from './components/Measurement/NewMeasurement/DropSelectMeas';
+import VideoInstruction from './components/Measurement/NewMeasurement/VideoInstruction';
+import AthleteSelector from './components/Measurement/NewMeasurement/AthleteSelector';
 function App() {
 
   return (
@@ -38,6 +41,9 @@ function App() {
           <Route path='/test5' element={<CreateCard />} />
           <Route path='/test6' element={<CheerTrainer />} />
           <Route path='/test7' element={<CreateProgram />} />
+          <Route path='/test8' element={<DropSelectMeas />} />
+          <Route path='/test9' element={<VideoInstruction />} />
+          <Route path='/test10' element={<AthleteSelector />} />
 
           
       </Routes>
