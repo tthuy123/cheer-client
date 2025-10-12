@@ -1,9 +1,11 @@
-import React, { useState } from "react";
+// MenuBar.jsx
+import React from "react";
 import {
   BottomNavigation,
   BottomNavigationAction,
   Paper,
 } from "@mui/material";
+import { Link, useLocation } from "react-router-dom";
 
 import AccountCircleOutlinedIcon from '@mui/icons-material/AccountCircleOutlined';
 import FitnessCenterIcon from "@mui/icons-material/FitnessCenter";
@@ -11,8 +13,24 @@ import StraightenIcon from "@mui/icons-material/Straighten";
 import TrackChangesIcon from "@mui/icons-material/TrackChanges";
 import ChecklistIcon from "@mui/icons-material/Checklist";
 
+const navItems = [
+  { label: "Home",        icon: <AccountCircleOutlinedIcon />, to: "/home" },
+  { label: "Training",    icon: <FitnessCenterIcon />,         to: "/training/strength" },
+  { label: "Measurement", icon: <StraightenIcon />,            to: "/measurement/new" },
+  { label: "Hit/Miss",    icon: <TrackChangesIcon />,          to: "/hit-miss" },
+  { label: "Check Off",   icon: <ChecklistIcon />,             to: "/check-off/new" },
+];
+
 export default function MenuBar() {
-  const [value, setValue] = useState(0);
+  const location = useLocation();
+
+  // Map URL -> index để highlight đúng tab
+  const currentIndex = React.useMemo(() => {
+    const i = navItems.findIndex(item =>
+      location.pathname.startsWith(item.to)
+    );
+    return i === -1 ? 0 : i;
+  }, [location.pathname]);
 
   return (
     <Paper
@@ -28,25 +46,25 @@ export default function MenuBar() {
     >
       <BottomNavigation
         showLabels
-        value={value}
-        onChange={(event, newValue) => setValue(newValue)}
+        value={currentIndex}
         sx={{
-          "& .Mui-selected": {
-             // selected label + icon
-             "& .MuiBottomNavigationAction-label.Mui-selected": {
-                color: "green",
-             },
-          },
           "& .Mui-selected .MuiSvgIcon-root": {
-                color: "green", // icon
-    },
+            color: "green",
+          },
+          "& .Mui-selected .MuiBottomNavigationAction-label": {
+            color: "green",
+          },
         }}
       >
-        <BottomNavigationAction label="Home" icon={<AccountCircleOutlinedIcon />} />
-        <BottomNavigationAction label="Training" icon={<FitnessCenterIcon />} />
-        <BottomNavigationAction label="Measurement" icon={<StraightenIcon />} />
-        <BottomNavigationAction label="Hit/Miss" icon={<TrackChangesIcon />} />
-        <BottomNavigationAction label="Check Off" icon={<ChecklistIcon />} />
+        {navItems.map((item) => (
+          <BottomNavigationAction
+            key={item.to}
+            label={item.label}
+            icon={item.icon}
+            component={Link}
+            to={item.to}
+          />
+        ))}
       </BottomNavigation>
     </Paper>
   );
