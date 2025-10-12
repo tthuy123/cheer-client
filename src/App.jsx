@@ -15,6 +15,8 @@ import TeamTrainingLog from './pages/Training/TeamTrainingLog';
 import DropSelectMeas  from './components/Measurement/NewMeasurement/DropSelectMeas';
 import VideoInstruction from './components/Measurement/NewMeasurement/VideoInstruction';
 import AthleteSelector from './components/Measurement/NewMeasurement/AthleteSelector';
+import NewMeasurement from './pages/Measurement/NewMeasurement';
+
 function App() {
 
   return (
@@ -30,6 +32,7 @@ function App() {
 
 
           {/* <Route path='/test7' element={<CreateProgram />} /> */}
+          <Route path='/test2' element={<NewMeasurement  />} />
 
           
       </Routes>
