@@ -3,6 +3,7 @@
     import { color, styled } from '@mui/system';
     import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
     import CheckIcon from '@mui/icons-material/Check';
+    import { Typography } from '@mui/material';
 
     // 1. Tạo Styled Components để tùy chỉnh giao diện
     const CustomFormControl = styled(FormControl)({
@@ -73,21 +74,19 @@
         <Box sx={{ p: 3, backgroundColor: 'white' }}>
         <CustomFormControl variant="outlined">
             {/* InputLabel được sử dụng như label riêng bên ngoài form control để giống ảnh */}
-            <InputLabel 
-                shrink 
+            <Typography 
                 htmlFor="measurement-select" 
                 sx={{ 
                     position: 'static',
                     transform: 'none', 
                     marginBottom: '0px', 
-                    marginLeft: '-12px',
                     color: 'rgba(0, 0, 0, 0.6)', 
-                    fontSize: '1rem', textAlign: 'left',
-                    fontWeight: 1000
+                    fontSize: '0.9rem', textAlign: 'left',
+                    fontWeight: 700
                 }}
             >
                 Select Measurement
-            </InputLabel>
+            </Typography>
 
             {/* Component Select */}
             <CustomSelect
