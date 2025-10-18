@@ -12,10 +12,10 @@ import StrengthPage from './pages/Training/Strength/StrengthPage';
 
 import TeamTrainingLog from './pages/Training/TeamTrainingLog';
 
-import DropSelectMeas  from './components/Measurement/NewMeasurement/DropSelectMeas';
-import VideoInstruction from './components/Measurement/NewMeasurement/VideoInstruction';
-import AthleteSelector from './components/Measurement/NewMeasurement/AthleteSelector';
+
 import NewMeasurement from './pages/Measurement/NewMeasurement';
+import ProgramEditor from './pages/Training/Strength/ProgramEditor';
+import ExerciseSessionPage from './pages/Training/Strength/ExcerciseSessionPage';
 
 function App() {
 
@@ -28,6 +28,9 @@ function App() {
           <Route path='/home' element={<HomePage />} />
           <Route path='/training/strength' element={<StrengthPage />} />
           <Route path='/training/strength/new' element={<CreateProgram />} />
+          <Route path='/training/strength/program' element={<ProgramEditor />} />
+          <Route path='/training/strength/program/exercise' element={<ExerciseSessionPage />} />
+
           <Route path='/training/team-training-log' element={<TeamTrainingLog />} />
 
 
