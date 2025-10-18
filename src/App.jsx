@@ -16,6 +16,11 @@ import DropSelectMeas  from './components/Measurement/NewMeasurement/DropSelectM
 import VideoInstruction from './components/Measurement/NewMeasurement/VideoInstruction';
 import AthleteSelector from './components/Measurement/NewMeasurement/AthleteSelector';
 import NewMeasurement from './pages/Measurement/NewMeasurement';
+import ProgressChart from './components/Measurement/TeamData/ProgressChart';
+import MeasurementBar from './components/Measurement/NewMeasurement/MeasurementBar';
+import TrainingBar from './components/Training/TrainingBar';
+import TopPerformancePage from './pages/Measurement/TopPerformancePage';
+import TeamData from './pages/Measurement/TeamData';
 
 function App() {
 
@@ -29,10 +34,17 @@ function App() {
           <Route path='/training/strength' element={<StrengthPage />} />
           <Route path='/training/strength/new' element={<CreateProgram />} />
           <Route path='/training/team-training-log' element={<TeamTrainingLog />} />
+          <Route path='/measurement/new' element={<NewMeasurement />} />
+          <Route path='/measurement/bar' element={<MeasurementBar />} />
+          <Route path='/training/bar' element={<TrainingBar />} />
+          <Route path="/measurement/top-performance-page" element={<TopPerformancePage />} />
+          <Route path="/measurement/team-data" element={<TeamData />} />
 
 
           {/* <Route path='/test7' element={<CreateProgram />} /> */}
-          <Route path='/test2' element={<NewMeasurement  />} />
+          <Route path='/test2' element={<DropSelectMeas />} />
+          <Route path='/test4' element={<ProgressChart />} />
+
 
           
       </Routes>

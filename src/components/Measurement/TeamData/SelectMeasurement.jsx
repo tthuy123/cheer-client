@@ -33,8 +33,8 @@ const SelectMeasurement = () => {
     <Box 
       sx={{ 
         padding: 2, 
-        maxWidth: 400, 
-        margin: '0 auto',
+        maxWidth: '900px !important', 
+        //margin: '0 auto',
         // THAY ĐỔI: Áp dụng font Aptos cho toàn bộ component
         fontFamily: 'Aptos, sans-serif',
       }}

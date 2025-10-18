@@ -27,8 +27,8 @@ const SelectAthlete = () => {
     <Box 
       sx={{ 
         padding: 2, 
-        maxWidth: 400, 
-        margin: '0 auto',
+        maxWidth: 900, 
+        //margin: '0 auto',
         // Áp dụng font Aptos cho toàn bộ component (giữ nguyên từ SelectMeasurement)
         fontFamily: 'Aptos, sans-serif',
       }}

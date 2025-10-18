@@ -53,7 +53,7 @@ const TopPerformance = ({ data = performanceData }) => {
     <Box
       sx={{
         width: '100%',
-        maxWidth: 600, // Giới hạn chiều rộng cho dễ nhìn
+        maxWidth: 900, // Giới hạn chiều rộng cho dễ nhìn
         margin: '0 auto',
         // Thêm đường viền mờ xung quanh toàn bộ khối để giống trong ảnh (tùy chọn)
         // border: `1px solid ${DIVIDER_COLOR}`,
