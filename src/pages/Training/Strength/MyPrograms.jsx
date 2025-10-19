@@ -1,17 +1,10 @@
-import TrainingLayout from '../../../components/layouts/TrainingLayout';
-
-import SearchBar from '../../../components/Training/SearchBar';
-import ProgramCard from '../../../components/Training/ProgramCard';
-import CreateCard from '../../../components/Training/CreateCard';
-
-const MyPrograms = () => {
-    return (
-        <TrainingLayout>
-            <CreateCard />
-            <SearchBar />
-            <ProgramCard />
-        </TrainingLayout>
-    );
-};
-
-export default MyPrograms;
+// MyPrograms.jsx  (type = My)
+import TrainingLayout from "../../../components/layouts/TrainingLayout";
+import TrainingProgramsPage from "./TrainingProgramsPage";
+export default function MyPrograms() {
+  return (
+    <TrainingLayout>
+      <TrainingProgramsPage filterType="my" showCreate />
+    </TrainingLayout>
+  );
+}

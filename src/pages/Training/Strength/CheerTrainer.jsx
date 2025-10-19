@@ -1,15 +1,10 @@
-import TrainingLayout from '../../../components/layouts/TrainingLayout';
-
-import SearchBar from '../../../components/Training/SearchBar';
-import ProgramCard from '../../../components/Training/ProgramCard';
-
-const CheerTrainer = () => {
-    return (
-        <TrainingLayout>
-            <SearchBar />
-            <ProgramCard />
-        </TrainingLayout>
-    );
-};
-
-export default CheerTrainer;
+// CheerTrainer.jsx  (hiển thị tất cả)
+import TrainingLayout from "../../../components/layouts/TrainingLayout";
+import TrainingProgramsPage from "./TrainingProgramsPage";
+export default function CheerTrainer() {
+  return (
+    <TrainingLayout>
+      <TrainingProgramsPage filterType="all" showCreate={false} />
+    </TrainingLayout>
+  );
+}
