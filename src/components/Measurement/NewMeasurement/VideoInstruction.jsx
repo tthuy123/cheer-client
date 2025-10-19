@@ -37,7 +37,7 @@ export default function VideoInstruction({
       sx={{ 
         maxWidth: '900px', 
         mx: 'auto', 
-        p: { xs: 2, md: 4 }, // Padding responsive
+        p: { xs: -10, md: 4 }, // Padding responsive
         backgroundColor: 'white',
         // SỬA LỖI CĂN GIỮA: Đảm bảo toàn bộ nội dung căn trái
         textAlign: 'left' 
@@ -106,7 +106,7 @@ export default function VideoInstruction({
         sx={{ 
           fontWeight: 600, 
           fontSize: '1rem', 
-          mb: 2, // Khoảng cách với danh sách bước
+          mb: 0, // Khoảng cách với danh sách bước
           color: '#333'
         }}
       >
@@ -125,7 +125,7 @@ export default function VideoInstruction({
             component="li" 
             key={index} 
             sx={{ 
-              mb: 1, 
+              mb: 1 , 
               lineHeight: 1.5
             }}
           >
@@ -135,7 +135,7 @@ export default function VideoInstruction({
       </Box>
 
       {/* Phần trống để giữ khoảng cách dưới cùng */}
-      <Box sx={{ mt: 5 }} />
+      <Box sx={{ mt: -5 }} />
     </Box>
   );
 }

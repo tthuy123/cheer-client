@@ -6,24 +6,64 @@ import {
   Box,
   Typography,
 } from '@mui/material';
+import { useEffect } from 'react';
+import MeasurementAPI from '../../../api/modules/measurement.api.js';
 
 // Danh sách các loại đo lường
-const MEASUREMENTS = [
-  '1 Mile Time',
-  '2 Mile Time',
-  '20m Sprint',
-  '30 Second Endurance Jump',
-  '300-Yard Shuttle Run',
-  '40 Yard Dash',
-  '400m Time',
-  '5-10-5 Pro Agility Test',
-  'Bench Press - 1 Rep Max',
-  'Bench Press - 10 Rep Max',
-  'Cooper 12-Minute Run',
-];
+// const MEASUREMENTS = [
+//   '1 Mile Time',
+//   '2 Mile Time',
+//   '20m Sprint',
+//   '30 Second Endurance Jump',
+//   '300-Yard Shuttle Run',
+//   '40 Yard Dash',
+//   '400m Time',
+//   '5-10-5 Pro Agility Test',
+//   'Bench Press - 1 Rep Max',
+//   'Bench Press - 10 Rep Max',
+//   'Cooper 12-Minute Run',
+// ];
+
 
 const SelectMeasurement = () => {
-  const [selectedMeasure, setSelectedMeasure] = useState('1 Mile Time');
+  const [selectedMeasure, setSelectedMeasure] = useState();
+
+// 1. State lưu trữ danh sách measurements (dữ liệu từ API)
+  const [measurements, setMeasurements] = useState([]); 
+  // 2. State lưu giá trị được chọn
+  
+  const [isLoading, setIsLoading] = useState(true);
+
+  // GỌI API BẰNG useEffect
+useEffect(() => {
+    const fetchMeasurements = async () => {
+        setIsLoading(true);
+        
+        // data là mảng các đối tượng: [{ measurement_id: 1, name: '1 Mile Time', ... }, ...]
+        const data = await MeasurementAPI.listAllName(); 
+        
+        console.log("✅ Measurements từ API (dạng đối tượng):", data);
+
+        if (Array.isArray(data)) {
+            // ⭐️ SỬA LỖI Ở ĐÂY: Dùng .map() để trích xuất chỉ trường 'name'
+            const measurementNames = data.map(item => item.name);
+            
+            // Lưu mảng TÊN (chuỗi) vào state measurements
+            setMeasurements(measurementNames);
+            
+            // Thiết lập giá trị mặc định được chọn
+            if (measurementNames.length > 0) {
+                // Lấy tên đầu tiên từ mảng tên
+                setSelectedMeasure(measurementNames[0]); 
+            }
+        } else {
+            setMeasurements([]);
+        }
+        setIsLoading(false);
+    };
+
+    fetchMeasurements();
+}, []);
 
   const handleChange = (event) => {
     setSelectedMeasure(event.target.value);
@@ -33,8 +73,8 @@ const SelectMeasurement = () => {
     <Box 
       sx={{ 
         padding: 2, 
-        maxWidth: 400, 
-        margin: '0 auto',
+        maxWidth: '900px !important', 
+        //margin: '0 auto',
         // THAY ĐỔI: Áp dụng font Aptos cho toàn bộ component
         fontFamily: 'Aptos, sans-serif',
       }}
@@ -81,7 +121,7 @@ const SelectMeasurement = () => {
             textAlign: 'left',
           }}
         >
-          {MEASUREMENTS.map((measure) => (
+          {measurements.map((measure) => (
             <MenuItem 
               key={measure} 
               value={measure}
