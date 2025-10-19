@@ -9,13 +9,13 @@ import HomePage from './pages/HomePage';
 import LoginPage from './pages/LoginPage';
 import CreateProgram from './pages/Training/Strength/CreateProgram';
 import StrengthPage from './pages/Training/Strength/StrengthPage';
-
 import TeamTrainingLog from './pages/Training/TeamTrainingLog';
 
 
-import NewMeasurement from './pages/Measurement/NewMeasurement';
 import ProgramEditor from './pages/Training/Strength/ProgramEditor';
 import ExerciseSessionPage from './pages/Training/Strength/ExcerciseSessionPage';
+
+import NewMeasurement from './pages/Measurement/NewMeasurement';
 
 function App() {
 
@@ -32,6 +32,9 @@ function App() {
           <Route path='/training/strength/program/exercise' element={<ExerciseSessionPage />} />
 
           <Route path='/training/team-training-log' element={<TeamTrainingLog />} />
+
+          /* Measurement */
+          <Route path='/measurement/new' element={<NewMeasurement  />} />
 
 
           {/* <Route path='/test7' element={<CreateProgram />} /> */}
