@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   Box,
   Paper,
@@ -8,17 +8,40 @@ import {
   Button,
   Divider,
   Link,
+  Chip,
 } from "@mui/material";
+import { useLocation, useNavigate } from "react-router-dom";
 import SelectedExercisesSection from "../../../components/Training/ProgramEditor/SelectedExercisesSection";
 import ExerciseEditorCard from "../../../components/Training/ProgramEditor/ExerciseEditorCard";
 
+import Program from "../../../api/modules/program.api.js";
+import dayjs from "dayjs";
+import { useSelector } from "react-redux";
+
+/** ===== Presets theo Training Type =====
+ * General      -> 3 x 10 reps x RPE 7
+ * Max Strength -> 3 x  8 reps x RPE 8
+ * Hypertrophy  -> 3 x 12 reps x RPE 8
+ * Power        -> 3 x  6 reps x RPE 6
+ * Endurance    -> 3 x 20 reps x RPE 9
+ */
 const TRAINING_TYPES = [
   { value: "general", label: "General" },
-  { value: "strength", label: "Strength" },
+  { value: "max_strength", label: "Max Strength" },
   { value: "hypertrophy", label: "Hypertrophy" },
+  { value: "power", label: "Power" },
   { value: "endurance", label: "Endurance" },
 ];
 
+const PRESETS = {
+  general:      { sets: 3, reps: 10, rpe: 7 },
+  max_strength: { sets: 3, reps: 8,  rpe: 8 },
+  hypertrophy:  { sets: 3, reps: 12, rpe: 8 },
+  power:        { sets: 3, reps: 6,  rpe: 6 },
+  endurance:    { sets: 3, reps: 20, rpe: 9 },
+};
+
+// fallback demo nếu không có state mang sang
 const DEFAULT_EXERCISES = [
   {
     id: "exA",
@@ -28,30 +51,124 @@ const DEFAULT_EXERCISES = [
       { id: "s1", weight: 10, reps: 5, rpe: 7 },
       { id: "s2", weight: 10, reps: 7, rpe: 7 },
       { id: "s3", weight: 10, reps: 7, rpe: 7 },
-      { id: "s4", weight: 10, reps: 7, rpe: 7 },
     ],
   },
 ];
+const TT_LABELS = {
+  general: "General",
+  max_strength: "Max Strength",
+  hypertrophy: "Hypertrophy",
+  power: "Power",
+  endurance: "Endurance",
+};
+const fmt = (d) => dayjs(d).format("YYYY-MM-DD HH:mm:ss");
+
+const toNum = (v) => {
+  if (typeof v === "number" && !Number.isNaN(v)) return v;
+  const n = Number(String(v).replace(/[^\d.-]/g, "")); // 'ex_12' -> 12
+  return Number.isNaN(n) ? undefined : n;
+};
+
+const buildExercisesPayload = (exs) =>
+  exs.map((ex) => {
+    const setsCount = Array.isArray(ex.sets) ? ex.sets.length : 0;
+    const repsVal = ex.sets?.[0]?.reps ?? 0;
+    return {
+      exercise_id: toNum(ex.exercise_id ?? ex.id), // Ưu tiên số
+      type: ex.name ?? "Exercise",
+      sets: { sets: setsCount, reps: repsVal, weight: 0 }, // không dùng weight -> 0
+      status: 1,
+    };
+  });
+
+function toEditorExercises(picked = [], trainingType = "general") {
+  const preset = PRESETS[trainingType] ?? PRESETS.general;
+  return picked.map((e, idx) => ({
+    id: e.id ?? `ex_${Date.now()}_${idx}`,
+    name: e.name ?? "Unnamed Exercise",
+    imageUrl: e.imageUrl ?? "/images/thumb.jpg",
+    sets: Array.from({ length: preset.sets }, (_, i) => ({
+      id: `s_${Date.now()}_${idx}_${i}`,
+      weight: 0,
+      reps: preset.reps,
+      rpe: preset.rpe,
+    })),
+  }));
+}
 
 export default function ProgramEditor() {
+  const navigate = useNavigate();
+  const { state } = useLocation(); // { programType, selectedExercises }
+  const token = useSelector((s) => s.auth.token);
+  const userId = useSelector((s) => s.auth.user_id);
+
+
   const [programName, setProgramName] = useState("");
   const [trainingType, setTrainingType] = useState("general");
-  const [exercises, setExercises] = useState(DEFAULT_EXERCISES);
+  const [programScope, setProgramScope] = useState(state?.programType ?? "my"); // "team" | "my"
+  const [exercises, setExercises] = useState(
+    state?.selectedExercises?.length
+      ? toEditorExercises(state.selectedExercises, "general")
+      : DEFAULT_EXERCISES
+  );
+
+  const [saving, setSaving] = useState(false);
+  const [err, setErr] = useState("");
+  const [ok, setOk] = useState("");
+
+  // Prefill tên chương trình nếu có dữ liệu chuyển sang
+  useEffect(() => {
+    if (state?.selectedExercises?.length) {
+      setProgramName(
+        `Program ${new Date().toLocaleDateString()} (${state?.programType ?? "my"})`
+      );
+    }
+  }, [state]);
+
+  // ==== cập nhật set/reps/RPE khi đổi trainingType ====
+  const applyPresetToExercises = (type) => {
+    const preset = PRESETS[type] ?? PRESETS.general;
+
+    setExercises((prev) =>
+      prev.map((ex) => {
+        const nextSets = Array.from({ length: preset.sets }, (_, i) => {
+          const old = ex.sets?.[i];
+          return {
+            id: old?.id ?? `s_${ex.id}_${i}_${Date.now()}`,
+            weight: old?.weight ?? 0, // giữ weight nếu có
+            reps: preset.reps,
+            rpe: preset.rpe,
+          };
+        });
+        return { ...ex, sets: nextSets };
+      })
+    );
+  };
+
+  const handleChangeTrainingType = (newType) => {
+    setTrainingType(newType);
+    applyPresetToExercises(newType);
+  };
 
   const prescriptionHint = useMemo(() => {
-    if (!exercises.length || !exercises[0].sets.length) return "";
-    const setsCount = exercises[0].sets.length;
-    const reps = exercises[0].sets[0].reps ?? "";
-    const rpe = exercises[0].sets[0].rpe ?? "";
-    return `${setsCount} sets × ${reps} reps × ${rpe} RPE`;
-  }, [exercises]);
+    const preset = PRESETS[trainingType];
+    if (!preset) return "";
+    return `${preset.sets} sets x ${preset.reps} reps x ${preset.rpe} RPE`;
+  }, [trainingType]);
 
   const addExercise = () => {
+    const preset = PRESETS[trainingType] ?? PRESETS.general;
+    const ts = Date.now();
     const newEx = {
-      id: `ex_${Date.now()}`,
+      id: `ex_${ts}`,
       name: "New Exercise",
       imageUrl: "/images/thumb.jpg",
-      sets: [{ id: `s_${Date.now()}`, weight: 0, reps: 8, rpe: 6 }],
+      sets: Array.from({ length: preset.sets }, (_, i) => ({
+        id: `s_${ts}_${i}`,
+        weight: 0,
+        reps: preset.reps,
+        rpe: preset.rpe,
+      })),
     };
     setExercises((prev) => [...prev, newEx]);
   };
@@ -66,22 +183,73 @@ export default function ProgramEditor() {
     setExercises((prev) => prev.filter((ex) => ex.id !== id));
   };
 
-  const handleSave = () => {
-    console.log("Saving program:", { programName, trainingType, exercises });
-  };
+  // const handleSave = () => {
+  //   console.log("Saving program:", {
+  //     programName,
+  //     trainingType,
+  //     programScope,
+  //     exercises,
+  //   });
+  // };
+  const handleSave = async () => {
+  try {
+    setSaving(true);
+    setErr("");
+    setOk("");
+
+    if (!userId) throw new Error("Missing userId.");
+    // const started = new Date();
+    // const finished = new Date(started.getTime() + 60 * 60 * 1000);
+
+    const payload = {
+      program: {
+        name: (programName || "").trim() || "Untitled Program",
+        type: programScope === "team" ? "team" : "my",           // 👈 đúng yêu cầu
+        training_type: TT_LABELS[trainingType] || "General",     // nhãn hiển thị
+      },
+      exercises: buildExercisesPayload(exercises),
+    };
+
+    await Program.CreateProgram(userId, payload, token);
+    setOk("Saved!");
+    navigate("/training/strength/");
+   // console.log("Program saved:", payload);
+  } catch (e) {
+    setErr(e?.response?.data?.message || e?.message || "Save failed");
+  } finally {
+    setSaving(false);
+  }
+};
+
+  const handleBack = () => navigate(-1);
 
   return (
     <Box sx={{ width: "100%", px: 3, py: 2 }}>
-      {/* Top bar: tất cả căn trái */}
+      {/* Top bar */}
       <Box sx={{ display: "flex", alignItems: "center", mb: 2 }}>
-    <Link underline="none" color="success.main" sx={{ mr: "auto", fontWeight: 600 }} href="#">
-     &lt; Back
-    </Link>
-    <Typography sx={{ fontWeight: 700, color: "success.dark", textAlign: "center", flex: 1 }}>
-      Program Editor
-    </Typography>
-    <Box sx={{ width: 64 }} /> {/* spacer */}
-  </Box>
+        <Link
+          component="button"
+          underline="none"
+          color="success.main"
+          sx={{ mr: "auto", fontWeight: 600 }}
+          onClick={handleBack}
+        >
+          &lt; Back
+        </Link>
+
+        <Typography sx={{ fontWeight: 700, color: "success.dark", textAlign: "center", flex: 1 }}>
+          Program Editor
+        </Typography>
+
+        <Box sx={{ width: 140, display: "flex", justifyContent: "flex-end" }}>
+          <Chip
+            size="small"
+            label={programScope === "team" ? "Team Programs" : "My Programs"}
+            color="success"
+            variant="outlined"
+          />
+        </Box>
+      </Box>
 
       <Paper
         elevation={0}
@@ -90,7 +258,7 @@ export default function ProgramEditor() {
           borderColor: "divider",
           borderRadius: 2,
           p: 3,
-          textAlign: "left", // đảm bảo không thừa kế center từ đâu đó
+          textAlign: "left",
         }}
       >
         {/* Program Name */}
@@ -104,19 +272,21 @@ export default function ProgramEditor() {
           value={programName}
           onChange={(e) => setProgramName(e.target.value)}
           sx={{ mb: 2 }}
-          inputProps={{ style: { textAlign: "left" } }} // phòng khi theme nào đó ép center
+          inputProps={{ style: { textAlign: "left" } }}
         />
 
         {/* Training Type */}
-        <Typography variant="subtitle1" sx={{ mb: 0.5 }}>
+        <Typography variant="subtitle1" sx={{ mb: 0.5, display: "flex", alignItems: "center", gap: 0.75 }}>
           Training Type
+          {/* icon hint nhỏ nếu bạn muốn thêm */}
+          {/* <Tooltip title="Changing this updates sets/reps/RPE for all exercises."><InfoOutlined fontSize="inherit" /></Tooltip> */}
         </Typography>
         <TextField
           select
           fullWidth
           size="small"
           value={trainingType}
-          onChange={(e) => setTrainingType(e.target.value)}
+          onChange={(e) => handleChangeTrainingType(e.target.value)}
           sx={{ mb: 0.5 }}
         >
           {TRAINING_TYPES.map((opt) => (
@@ -182,6 +352,17 @@ export default function ProgramEditor() {
         >
           Save Program
         </Button>
+            {err && (
+      <Typography color="error" sx={{ mt: 1 }}>
+        {String(err)}
+      </Typography>
+    )}
+    {ok && (
+      <Typography color="success.main" sx={{ mt: 1 }}>
+        {ok}
+      </Typography>
+    )}
+
       </Paper>
     </Box>
   );
