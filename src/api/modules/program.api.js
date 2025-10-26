@@ -23,6 +23,25 @@ const Program = {
     const res = await Client.post(`/programs/users/${userId}`, data, { headers });
     return res?.data ?? res;
   },
+  
+  async GetProgramDetailsById(userId, programId, token) {
+    const headers = token ? { Authorization: `Bearer ${token}` } : {};
+    const res = await Client.get(`/programs/users/${userId}/programs/${programId}`, { headers });
+    console.log("📘 Chi tiết program:", res?.data || res);
+    return res?.data ?? res;
+  },
+
+  async SaveWorkout(userId, programId, programExerciseId, payload, token) {
+  const headers = token ? { Authorization: `Bearer ${token}` } : {};
+  const res = await Client.post(
+    `/programs/${programId}/exercises/${programExerciseId}/workouts`,
+    { user_id: userId, ...payload }, // nếu BE lấy user từ token thì có thể bỏ user_id
+    { headers }
+  );
+  return res?.data ?? res;
+}
+
+
 };
 
 export default Program;

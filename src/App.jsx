@@ -34,8 +34,10 @@ function App() {
           <Route path='/training/strength' element={<StrengthPage />} />
           <Route path='/training/strength/new' element={<CreateProgram />} />
           <Route path='/training/strength/program' element={<ProgramEditor />} />
-          <Route path='/training/strength/program/exercise' element={<ExerciseSessionPage />} />
-
+          <Route
+          path='/programs/:programId/exercises/:programExerciseId'
+          element={<ExerciseSessionPage />}
+        />
           <Route path='/training/team-training-log' element={<TeamTrainingLog />} />
           <Route path='/measurement/new' element={<NewMeasurement />} />
           <Route path='/measurement/bar' element={<MeasurementBar />} />
@@ -48,8 +50,8 @@ function App() {
 
 
           {/* <Route path='/test7' element={<CreateProgram />} /> */}
-          <Route path='/test2' element={<DropSelectMeas />} />
-          <Route path='/test4' element={<ProgressChart />} />
+          {/* <Route path='/test2' element={<DropSelectMeas />} /> */}
+          {/* <Route path='/test4' element={<ProgressChart />} /> */}
 
 
           
