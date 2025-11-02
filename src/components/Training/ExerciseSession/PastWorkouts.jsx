@@ -21,7 +21,7 @@ export default function PastWorkouts({ items = [] }) {
       <Typography sx={{ fontWeight: 700, mb: 1 }}>Past Workouts</Typography>
 
       {shown.map((w) => (
-        <Box key={w.date} sx={{ mb: 2 }}>
+        <Box key={w.id} sx={{ mb: 2 }}>
           <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
             {w.date}
           </Typography>

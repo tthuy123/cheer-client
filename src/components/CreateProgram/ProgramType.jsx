@@ -3,7 +3,7 @@ import { useForm, useWatch } from "react-hook-form";
 import { Card, CardContent, Typography } from "@mui/material";
 import SelectField from "./SelectField";
 
-export default function ProgramType({ onChange, defaultValue = "my" }) {
+export default function ProgramType({ onChange, defaultValue = "team" }) {
   const { control, handleSubmit } = useForm({
     defaultValues: {
       programType: defaultValue, // giá trị mặc định

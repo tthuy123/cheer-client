@@ -8,7 +8,7 @@ import ExercisePicker from "../../../components/Training/CreateProgram/ExerciseP
 
 const CreateProgram = () => {
   const navigate = useNavigate();
-  const [programType, setProgramType] = useState(null);
+  const [programType, setProgramType] = useState("team");
   const [selectedExercises, setSelectedExercises] = useState([]);
 
   const handleBack = () => {
