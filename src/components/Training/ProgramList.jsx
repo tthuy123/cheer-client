@@ -50,7 +50,7 @@ const ProgramCard = ({ program, onStart }) => (
           variant="outlined"
           size="small"
           startIcon={<PlayArrowIcon />}
-          sx={{ color: "#257850", borderColor: "#257850", textTransform: "none", borderRadius: "6px" }}
+          sx={{ color: "#257850", borderColor: "#257850", textTransform: "none", borderRadius: "6px", mt: 5 }}
           onClick={() => onStart?.(program)}
         >
           Start
