@@ -24,12 +24,23 @@ const Program = {
     return res?.data ?? res;
   },
   
-  async GetProgramDetailsById(userId, programId, token) {
-    const headers = token ? { Authorization: `Bearer ${token}` } : {};
-    const res = await Client.get(`/programs/users/${userId}/programs/${programId}`, { headers });
-    console.log("📘 Chi tiết program:", res?.data || res);
-    return res?.data ?? res;
-  },
+// Code MỚI (đã sửa)
+async GetProgramDetailsById(userId, programId, token) {
+  // headers cơ bản (gồm token nếu có)
+  const baseHeaders = token ? { Authorization: `Bearer ${token}` } : {};
+
+  // Gộp headers cơ bản với headers chống cache
+  const headers = {
+    ...baseHeaders,
+    "Cache-Control": "no-cache, no-store, must-revalidate",
+    "Pragma": "no-cache",
+    "Expires": "0",
+  };
+
+  const res = await Client.get(`/programs/users/${userId}/programs/${programId}`, { headers });
+  console.log("📘 Chi tiết program:", res?.data || res);
+  return res?.data ?? res;
+},
 
   async SaveWorkout(userId, programId, programExerciseId, payload, token) {
   const headers = token ? { Authorization: `Bearer ${token}` } : {};
