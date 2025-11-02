@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react'; // 1. THÊM HOOKS
 import {
   Box,
   Typography,
@@ -6,62 +6,107 @@ import {
   ListItem,
   ListItemText,
   Divider,
+  CircularProgress, // 2. THÊM LOADING
 } from '@mui/material';
 import { styled } from '@mui/material/styles';
+import { useSelector } from 'react-redux'; // 3. THÊM REDUX
+import Measurement from '../../../api/modules/measurement.api'; // 4. THÊM API
+// ... (Các hằng số màu sắc và component styled giữ nguyên) ...
+const HEADER_BG_COLOR = '#e9f1ed'; 
+const TEXT_COLOR_PRIMARY = '#1e1e1e'; 
+const TEXT_COLOR_SECONDARY = '#757575'; 
+const DIVIDER_COLOR = '#e0e0e0'; 
 
-// Màu sắc gợi ý từ hình ảnh:
-const HEADER_BG_COLOR = '#e9f1ed'; // Màu xanh nhạt cho tiêu đề nhóm (ví dụ: 1 Mile Time)
-const TEXT_COLOR_PRIMARY = '#1e1e1e'; // Gần như đen
-const TEXT_COLOR_SECONDARY = '#757575'; // Màu xám cho phút/giây
-const DIVIDER_COLOR = '#e0e0e0'; // Màu xám nhạt cho Divider
+// 5. XÓA BỎ DỮ LIỆU MẪU (performanceData)
 
-// Dữ liệu mẫu (Sample Data)
-const performanceData = [
-  {
-    category: '1 Mile Time',
-    records: [
-      { rank: 1, name: 'Duy Coach', time: '08:00', unit: 'minutes' },
-      { rank: 2, name: 'Daniel Davis', time: '11:12', unit: 'minutes' },
-      { rank: 3, name: 'Benjamin Robinson', time: '12:11', unit: 'minutes' },
-    ],
-  },
-  {
-    category: '2 Mile Time',
-    records: [
-      { rank: 1, name: 'Duy Coach', time: '23:00', unit: 'minutes' },
-      { rank: 2, name: 'Benjamin Robinson', time: '66:00', unit: 'minutes' },
-    ],
-  },
-  {
-    category: '20m Sprint',
-    records: [
-      { rank: 1, name: 'Duy Coach', time: '10:00', unit: 'minutes' },
-    ],
-  },
-];
-
-// Component cho tiêu đề nhóm (Category Header)
 const CategoryHeader = styled(Box)(({ theme }) => ({
+  // ... (style giữ nguyên)
   backgroundColor: HEADER_BG_COLOR,
-  padding: theme.spacing(1.5, 2), // 12px trên/dưới, 16px trái/phải
+  padding: theme.spacing(1.5, 2), 
   borderBottom: `1px solid ${DIVIDER_COLOR}`,
 }));
 
 // Component chính
-const TopPerformance = ({ data = performanceData }) => {
+const TopPerformance = () => { // 6. XÓA PROP 'data'
+
+  // 7. THÊM STATE ĐỂ LẤY DỮ LIỆU
+  const [leaderboardData, setLeaderboardData] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const coachId = useSelector((state) => state.auth.user_id); // Lấy coachId
+
+  // 8. THÊM useEffect ĐỂ GỌI API
+  useEffect(() => {
+    if (!coachId) {
+      setIsLoading(false);
+      return; // Không làm gì nếu không có coachId
+    }
+
+    const fetchLeaderboard = async () => {
+      setIsLoading(true);
+      try {
+        // Gọi API
+        const apiData = await Measurement.getTeamLeaderboard(coachId);
+        
+        // 9. BIẾN ĐỔI DỮ LIỆU API
+        const transformedData = apiData.map(group => ({
+          // API 'measurement_name' -> Component 'category'
+          category: group.measurement_name,
+          
+          // API 'rankings' -> Component 'records'
+          records: group.rankings.map(record => ({
+            rank: record.rank,
+            // API 'first_name', 'last_name' -> Component 'name'
+            name: `${record.first_name} ${record.last_name}`,
+            // API 'result' -> Component 'time'
+            time: record.result,
+            // API 'unit' (từ group) -> Component 'unit' (trong record)
+            unit: group.unit,
+          }))
+        }));
+        
+        setLeaderboardData(transformedData);
+
+      } catch (error) {
+        console.error("Lỗi khi tải bảng xếp hạng:", error);
+        setLeaderboardData([]); // Đặt về mảng rỗng nếu lỗi
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchLeaderboard();
+  }, [coachId]); // Gọi lại khi coachId thay đổi
+
+
+  // 10. THÊM TRẠNG THÁI LOADING
+  if (isLoading) {
+    return (
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', p: 4 }}>
+        <CircularProgress />
+      </Box>
+    );
+  }
+
+  // 11. THÊM TRẠNG THÁI KHÔNG CÓ DỮ LIỆU
+  if (leaderboardData.length === 0) {
+    return (
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', p: 4 }}>
+        <Typography color="textSecondary">Không có dữ liệu xếp hạng.</Typography>
+      </Box>
+    );
+  }
+
+  // 12. CẬP NHẬT RENDER (chỉ đổi tên biến 'data' -> 'leaderboardData')
   return (
     <Box
       sx={{
         width: '100%',
-        maxWidth: 900, // Giới hạn chiều rộng cho dễ nhìn
+        maxWidth: 900, 
         margin: '0 auto',
-        // Thêm đường viền mờ xung quanh toàn bộ khối để giống trong ảnh (tùy chọn)
-        // border: `1px solid ${DIVIDER_COLOR}`,
-        // borderRadius: '4px',
         overflow: 'hidden',
       }}
     >
-      {data.map((categoryGroup, index) => (
+      {leaderboardData.map((categoryGroup, index) => ( // Đổi tên biến
         <React.Fragment key={categoryGroup.category}>
           {/* Header */}
           <CategoryHeader>
@@ -81,10 +126,11 @@ const TopPerformance = ({ data = performanceData }) => {
           {/* Danh sách các kỷ lục */}
           <List disablePadding>
             {categoryGroup.records.map((record, recordIndex) => (
+              // Logic render bên trong này giữ nguyên vì dữ liệu đã được biến đổi
               <React.Fragment key={recordIndex}>
                 <ListItem
                   sx={{
-                    padding: (theme) => theme.spacing(1, 2), // Khoảng đệm ListItem
+                    padding: (theme) => theme.spacing(1, 2), 
                   }}
                 >
                   {/* Cột 1: Rank và Tên */}
@@ -94,7 +140,7 @@ const TopPerformance = ({ data = performanceData }) => {
                         <Typography
                           component="span"
                           sx={{
-                            width: '20px', // Cố định chiều rộng cho Rank
+                            width: '20px', 
                             marginRight: 2,
                             fontWeight: 'bold',
                             color: TEXT_COLOR_PRIMARY,
@@ -124,7 +170,7 @@ const TopPerformance = ({ data = performanceData }) => {
                       display: 'flex',
                       alignItems: 'center',
                       whiteSpace: 'nowrap',
-                      minWidth: '100px', // Đảm bảo không bị xuống dòng
+                      minWidth: '100px', 
                     }}
                   >
                     <Typography
@@ -141,7 +187,7 @@ const TopPerformance = ({ data = performanceData }) => {
                       component="span"
                       sx={{
                         color: TEXT_COLOR_SECONDARY,
-                        fontSize: '0.875rem', // Kích thước chữ nhỏ hơn
+                        fontSize: '0.875rem', 
                       }}
                     >
                       {record.unit}
@@ -158,7 +204,7 @@ const TopPerformance = ({ data = performanceData }) => {
           </List>
 
           {/* Divider lớn giữa các Category (Nếu không phải là nhóm cuối cùng) */}
-          {index < data.length - 1 && (
+          {index < leaderboardData.length - 1 && ( // Đổi tên biến
             <Divider sx={{ borderBottomWidth: 5, borderColor: '#f7f7f7' }} />
           )}
         </React.Fragment>
