@@ -4,7 +4,7 @@ import TrainingProgramsPage from "./TrainingProgramsPage";
 export default function CheerTrainer() {
   return (
     <TrainingLayout>
-      <TrainingProgramsPage filterType="all" showCreate={false} />
+      <TrainingProgramsPage filterType="cheer" showCreate={false} />
     </TrainingLayout>
   );
 }
