@@ -59,9 +59,19 @@ const RecordPopup = ({
 
   // 5. HÀM XỬ LÝ KHI NHẤN NÚT "SAVE"
   const handleSaveClick = () => {
-    // Gọi hàm onSave (từ prop) và truyền object 'results' lên cho cha (NewMeasurement.jsx)
+    // 'results' hiện là: { 'id-1': '5', 'id-2': '6.2' }
+
+    // Chuyển đổi OBJECT thành ARRAY mà component Cha mong đợi
+    const resultsArray = Object.keys(results).map(athleteId => ({
+      athleteId: athleteId,    // Cha mong đợi key 'athleteId'
+      value: results[athleteId] // Cha mong đợi key 'value'
+    }));
+    
+    // 'resultsArray' giờ là: [ { athleteId: 'id-1', value: '5' }, { athleteId: 'id-2', value: '6.2' } ]
+
+    // Gửi ARRAY đã chuyển đổi lên cho cha
     if (onSave) {
-      onSave(results);
+      onSave(resultsArray); // <-- Đã sửa: gửi đi mảng
     }
   };
 

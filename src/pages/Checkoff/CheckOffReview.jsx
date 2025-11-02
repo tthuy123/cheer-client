@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { Box } from '@mui/material';
-import CheckOffLayout from '../../components/layouts/CheckOffLayout'; // Layout của bạn
+import CheckOffLayout from '../../components/layouts/CheckOffLayout';
 import ReviewCard from '../../components/Checkoff/ReviewCard'; // Card review
 
 // 1. DỮ LIỆU MOCK BẠN CUNG CẤP

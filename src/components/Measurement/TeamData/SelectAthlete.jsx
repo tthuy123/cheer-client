@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react'; // 1. XÓA: useState
 import {
   FormControl,
   Select,
@@ -7,20 +7,21 @@ import {
   Typography,
 } from '@mui/material';
 
-// Danh sách các vận động viên (Dựa trên ảnh minh họa)
-const ATHLETES = [
-  //'Select Athlete', // Placeholder/Tùy chọn mặc định
-  'athur doccle',
-  'bethony cimon',
-  'cecile cimon',
-];
+// 2. XÓA: Dữ liệu 'ATHLETES' cứng
 
-const SelectAthlete = () => {
-  // Đặt giá trị mặc định là 'Select Athlete' để khớp với Placeholder
-  const [selectedAthlete, setSelectedAthlete] = useState('Select Athlete');
+// 3. SỬA PROPS: Nhận dữ liệu từ component cha
+const SelectAthlete = ({ athletesList = [], selected, onChange }) => {
+  
+  // 4. XÓA: State nội bộ (useState)
 
+  // 5. SỬA: Dùng hàm handleChange chuẩn (gửi object về cho cha)
   const handleChange = (event) => {
-    setSelectedAthlete(event.target.value);
+    const selectedId = event.target.value;
+    // Tìm object VĐV đầy đủ
+    const selectedObject = athletesList.find(a => a.id === selectedId);
+    if (selectedObject) {
+      onChange(selectedObject); // Gửi object lên cho cha
+    }
   };
 
   return (
@@ -28,12 +29,10 @@ const SelectAthlete = () => {
       sx={{ 
         padding: 2, 
         maxWidth: 900, 
-        //margin: '0 auto',
-        // Áp dụng font Aptos cho toàn bộ component (giữ nguyên từ SelectMeasurement)
         fontFamily: 'Aptos, sans-serif',
       }}
     >
-      {/* Tiêu đề "Select Athlete" */}
+      {/* Tiêu đề (Giữ nguyên) */}
       <Typography 
         variant="body2" 
         sx={{ 
@@ -46,21 +45,25 @@ const SelectAthlete = () => {
         Select Athlete
       </Typography>
 
-      {/* FormControl chứa Select (HỘP CHỌN DUY NHẤT) */}
       <FormControl fullWidth size="medium">
         <Select
-          value={selectedAthlete}
+          // 6. SỬA: 'value' được điều khiển bởi prop 'selected' (dùng 'id')
+          value={selected ? selected.id : ''} 
           onChange={handleChange}
           displayEmpty
-          // THÊM: Render value='Select Athlete' là màu xám khi chưa chọn gì
-          renderValue={(value) => {
-            if (value === 'Select Athlete') {
+          
+          // 7. GIỮ NGUYÊN & SỬA: Dùng logic 'renderValue' của bạn
+          // nhưng kiểm tra dựa trên 'value' (là 'id' hoặc chuỗi rỗng)
+          renderValue={(valueId) => {
+            if (!valueId) { // Nếu không có ID (giá trị là '')
               // Dùng màu xám nhạt cho placeholder
-              return <Typography sx={{ color: '#a0a0a0', textAlign: 'left' }}>{value}</Typography>;
+              return <Typography sx={{ color: '#a0a0a0', textAlign: 'left' }}>Select Athlete</Typography>;
             }
-            return value;
+            // Nếu có ID, 'selected' (object) từ prop chắc chắn tồn tại
+            return selected.name;
           }}
           sx={{
+            // Toàn bộ style 'sx' của bạn được giữ nguyên
             backgroundColor: '#fff', 
             borderRadius: '8px',
             '& .MuiOutlinedInput-notchedOutline': {
@@ -69,38 +72,33 @@ const SelectAthlete = () => {
             '&:hover .MuiOutlinedInput-notchedOutline': {
               borderColor: '#a0a0a0',
             },
-            // Giữ nguyên màu viền khi focus (xanh lá)
             '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
               borderColor: '#257951',
             },
-            // Tùy chỉnh mũi tên (màu xám nhạt)
             '& .MuiSelect-icon':{
               color: '#a0a0a0', 
               right: 12,
-              fontSize: '1.5rem', // Giảm kích thước về mặc định/vừa phải
+              fontSize: '1.5rem',
             },
             fontFamily: 'Aptos, sans-serif',
-            // Căn lề trái cho giá trị được chọn
             textAlign: 'left',
           }}
         >
-          {ATHLETES.map((athlete) => (
+          {/* 8. XÓA: MenuItem "Select Athlete" (không cần nữa) */}
+          
+          {/* 9. SỬA: Lặp qua 'athletesList' (từ props) */}
+          {athletesList.map((athlete) => (
             <MenuItem 
-              key={athlete} 
-              value={athlete}
-              // Ẩn tùy chọn 'Select Athlete' trong menu thả xuống thực tế (tránh bị chọn lại)
-              disabled={athlete === 'Select Athlete'} 
+              key={athlete.id} // Dùng ID (từ object)
+              value={athlete.id} // Dùng ID (từ object)
               sx={{ 
+                // Giữ nguyên style 'sx' cho MenuItem của bạn
                 fontSize: '0.95rem',
                 color: '#1e1e1e',
                 fontFamily: 'Aptos, sans-serif',
-                
-                // MÀU HOVER (theo yêu cầu trước)
                 '&:hover': {
                     backgroundColor: '#f4f4f5',
                 },
-                
-                // MÀU SELECTED (theo yêu cầu trước)
                 '&.Mui-selected': {
                   backgroundColor: '#f4f4f5 !important', 
                 },
@@ -109,7 +107,7 @@ const SelectAthlete = () => {
                 }
               }}
             >
-              {athlete}
+              {athlete.name} {/* Hiển thị tên (từ object) */}
             </MenuItem>
           ))}
         </Select>

@@ -1,121 +1,197 @@
-import React, { useState } from 'react';
-import { Box, Button } from "@mui/material";
+import React, { useState, useEffect } from 'react';
+import { Box, Button, CircularProgress } from "@mui/material";
+
+// 1. IMPORT API
+// Đảm bảo đường dẫn này trỏ đúng đến file 'Measurement.api.js' của bạn
+import Measurement from '../../api/modules/measurement.api.js'; 
+
+// 2. IMPORT CÁC COMPONENT CON
 import SelectMeasurement from "../../components/Measurement/TeamData/SelectMeasurement";
 import VideoInstruction from "../../components/Measurement/NewMeasurement/VideoInstruction";
 import MeasurementLayout from "../../components/layouts/MeasurementLayout";
 import AthleteSelector from "../../components/Measurement/NewMeasurement/AthleteSelector";
 import RecordPopup from '../../components/Measurement/NewMeasurement/RecordPopup';
 
-// 3. ĐỊNH NGHĨA DANH SÁCH VĐV ĐẦY ĐỦ (Source of Truth)
-// Bạn nên lấy từ API, nhưng tạm thời hardcode ở đây để giống ví dụ trước
-const ATHLETES_LIST = [
-  { id: 'athur-doocie-123', name: 'Athur Doocie' },
-  { id: 'bethony-cimon-456', name: 'Bethony Cimon' },
-  { id: 'cecilia-cimon-789', name: 'Cecilia Cimon' },
-];
+import { useSelector } from 'react-redux';
 
-// Định nghĩa chiều rộng tối đa thống nhất cho tất cả các control
-const MAX_WIDTH = 500; // Có thể chọn 400, 500, hoặc 600px tùy ý
 
 export default function NewMeasurement() {
+  const coachId = useSelector((state) => state.auth.user_id);
+  console.log("Coach ID từ Redux:", coachId);
 
-// 4. THÊM STATE ĐỂ QUẢN LÝ
-  // State lưu ID của các VĐV được chọn
+  // 4. STATE QUẢN LÝ DỮ LIỆU TỪ API
+  const [measurementsList, setMeasurementsList] = useState([]); // Danh sách các bài đo
+  const [athletesList, setAthletesList] = useState([]);       // Danh sách VĐV của coach
+
+  // 5. STATE QUẢN LÝ LỰA CHỌN CỦA NGƯỜI DÙNG
+  const [selectedMeasurement, setSelectedMeasurement] = useState(null); // Lưu trữ TOÀN BỘ object bài đo
   const [selectedAthletes, setSelectedAthletes] = useState([]); 
-  // State quản lý việc popup Mở hay Đóng
+
+  // 6. STATE QUẢN LÝ UI (LOADING, POPUP)
+  const [isLoading, setIsLoading] = useState(true);   // Loading ban đầu
+  const [isSaving, setIsSaving] = useState(false);     // Đang lưu kết quả
   const [isPopupOpen, setIsPopupOpen] = useState(false);
 
-  // 5. LỌC DANH SÁCH VĐV ĐỂ TRUYỀN VÀO POPUP
-  // Lấy ra các đối tượng VĐV đầy đủ dựa trên ID đã chọn
-  const athletesToRecord = ATHLETES_LIST.filter(athlete => 
+  // 7. HOOK ĐỂ TẢI DỮ LIỆU BAN ĐẦU (DANH SÁCH VĐV VÀ BÀI ĐO)
+  useEffect(() => {
+    const loadInitialData = async () => {
+      if (!coachId) return; // Đảm bảo có coachId
+
+      setIsLoading(true);
+      try {
+        // Gọi API song song
+        const [measurementsData, athletesData] = await Promise.all([
+          Measurement.listAllMeasurements(),
+          Measurement.listAthletesOfCoach(coachId)
+        ]);
+        console.log("Dữ liệu measurements:", measurementsData);
+        console.log("Dữ liệu athletes:", athletesData);
+
+        // Xử lý dữ liệu athletes để khớp với định dạng component (id, name)
+        // GIẢ SỬ API trả về { user_id, first_name, last_name }
+        const mappedAthletes = athletesData.map(ath => ({
+          id: ath.id, // Map 'user_id' -> 'id'
+          name: `${ath.first_name} ${ath.last_name}` // Kết hợp tên
+        }));
+        
+        setMeasurementsList(measurementsData); // API trả về mảng đầy đủ [ {id, name, unit...} ]
+        setAthletesList(mappedAthletes); // Nguồn dữ liệu VĐV mới
+
+      } catch (error) {
+        console.error("Lỗi khi tải dữ liệu:", error);
+        // TODO: Hiển thị thông báo lỗi cho người dùng (ví dụ: Snackbar)
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadInitialData();
+  }, [coachId]); // Tải lại nếu coachId thay đổi
+
+  // 8. LỌC DANH SÁCH VĐV ĐỂ TRUYỀN VÀO POPUP (sử dụng state 'athletesList')
+  const athletesToRecord = athletesList.filter(athlete => 
     selectedAthletes.includes(athlete.id)
   );
 
-  // 6. THÊM CÁC HÀM ĐIỀU KHIỂN POPUP
+  // 9. CẬP NHẬT HÀM MỞ POPUP (thêm kiểm tra bài đo)
   const handleOpenPopup = () => {
-    // Chỉ mở popup nếu có ít nhất 1 VĐV được chọn
-    if (selectedAthletes.length > 0) {
-      setIsPopupOpen(true);
-    } else {
-      alert("Vui lòng chọn ít nhất một vận động viên."); // Hoặc dùng Snackbar
+    if (!selectedMeasurement) {
+      alert("Vui lòng chọn một bài đo (measurement).");
+      return;
     }
+    if (selectedAthletes.length === 0) {
+      alert("Vui lòng chọn ít nhất một vận động viên.");
+      return;
+    }
+    setIsPopupOpen(true);
   };
 
   const handleClosePopup = () => {
     setIsPopupOpen(false);
   };
 
-  // Hàm này nhận dữ liệu từ popup (khi nhấn "Save Result")
-  const handleSaveResults = (results) => {
-    console.log("Dữ liệu kết quả để gửi đi:", results);
-    // TODO: Gọi API để lưu 'results' tại đây
+  // 10. CẬP NHẬT HÀM LƯU KẾT QUẢ (GỌI API)
+  const handleSaveResults = async (results) => {
+    // 'results' là mảng từ popup, ví dụ: [{ athleteId: '...', value: '...' }]
+    
+    if (!selectedMeasurement) {
+      console.error("Không thể lưu: không có bài đo nào được chọn.");
+      return;
+    }
+    
+    setIsSaving(true);
+    const dateRecorded = new Date().toISOString();
 
-    // Sau khi lưu xong, đóng popup
-    handleClosePopup();
+    // Tạo một mảng các promise để gọi API cho từng VĐV
+    const savePromises = results.map(result => {
+      
+      // QUAN TRỌNG: Chuyển đổi giá trị 'value' (ví dụ: "10:30")
+      // thành một con số (ví dụ: 630 giây) nếu cần.
+      // Ở đây, tôi giả sử 'result.value' đã là một con số.
+      const numericalValue = parseFloat(result.value); 
+
+      if (isNaN(numericalValue)) {
+        console.warn(`Bỏ qua giá trị không hợp lệ của ${result.athleteId}: ${result.value}`);
+        return Promise.resolve(null); // Bỏ qua VĐV này
+      }
+
+      const measurementData = {
+        athleteId: result.athleteId,
+        measurementId: selectedMeasurement.measurement_id, // Lấy ID từ state
+        value: numericalValue, // Giá trị đã xử lý
+       // dateRecorded: dateRecorded
+      };
+      
+      return Measurement.setNewRecord(measurementData);
+    });
+
+    try {
+      // Gửi tất cả request song song
+      await Promise.all(savePromises);
+      
+      alert("Lưu kết quả thành công!"); // TODO: Dùng Snackbar
+      
+      // Đóng popup và reset
+      handleClosePopup();
+      setSelectedAthletes([]); // Xóa các VĐV đã chọn
+
+    } catch (error) {
+      console.error("Lỗi khi lưu kết quả:", error);
+      alert("Đã xảy ra lỗi khi lưu kết quả."); // TODO: Dùng Snackbar
+    } finally {
+      setIsSaving(false);
+    }
   };
 
-  return (
-    <MeasurementLayout>
-  <Box
-      sx={{
-        // 1. Component cha chịu trách nhiệm căn giữa toàn bộ khối
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center', // CĂN GIỮA: Căn chỉnh các mục con theo trục ngang (x)
-        flex: 1,
-        width: '100%', // Đảm bảo chiếm đủ chiều rộng màn hình
-        gap: 2,
-        p: 2,
-      }}
-    >
-      
-      {/* 2. Áp dụng chiều rộng tối đa thống nhất cho các Select */}
-      <Box sx={{ width: '100%', maxWidth: 900 }}>
-        <SelectMeasurement />
-      </Box>
+  // 11. HIỂN THỊ LOADING BAN ĐẦU
+  if (isLoading) {
+    return (
+      <MeasurementLayout>
+        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
+          <CircularProgress />
+        </Box>
+      </MeasurementLayout>
+    );
+  }
 
-      {/* 3. VideoInstruction đã có maxWidth riêng là 900px, không cần Box bao bọc */}
-      <VideoInstruction /> 
-      
-      
-
-      {/* <Box sx={{ width: '100%', maxWidth: 900 }}>
-        <AthleteSelector />
-      </Box> */}
-
-      {/* 5. Áp dụng chiều rộng tối đa thống nhất cho Button */}
-{/*       <Button 
-        variant="contained" 
-        sx={{ 
-          width: "100%", 
-          maxWidth: 900, // THAY ĐỔI: Sử dụng MAX_WIDTH
-          backgroundColor: "#257951", 
-          color: "white", 
-          fontSize: "15px", 
-          fontWeight: "bold", 
-          textTransform: "none", 
-          borderRadius: "10px", 
-          padding: "8px", 
-          marginTop: "10px" 
-        }}
-      >
-        Set Record Results
-      </Button>
-</Box> */}
-
-{/* 7. CẬP NHẬT ATHLETESELECTOR ĐỂ TRUYỀN PROPS */}
+  // 12. GIAO DIỆN CHÍNH
+  return (
+    <MeasurementLayout>
+      <Box
+        sx={{
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          flex: 1,
+          width: '100%',
+          gap: 2,
+          p: 2,
+        }}
+      >
+        {/* TRUYỀN DỮ LIỆU VÀ HÀM VÀO CÁC COMPONENT CON */}
         <Box sx={{ width: '100%', maxWidth: 900 }}>
-          <AthleteSelector 
-            athletesList={ATHLETES_LIST} // Truyền danh sách đầy đủ
-            selectedAthletes={selectedAthletes} // Truyền state VĐV đã chọn
-            onChange={setSelectedAthletes} // Truyền hàm để cập nhật state
+         <SelectMeasurement
+            measurementsList={measurementsList} // <-- THÊM PROP NÀY
+            selected={selectedMeasurement}
+            onChange={setSelectedMeasurement}
           />
         </Box>
 
-        {/* 8. CẬP NHẬT NÚT BUTTON ĐỂ GỌI HÀM MỞ POPUP */}
+        {/* TODO: Bạn có thể muốn VideoInstruction thay đổi dựa trên 'selectedMeasurement' */}
+        <VideoInstruction /> 
+        
+        <Box sx={{ width: '100%', maxWidth: 900 }}>
+          <AthleteSelector 
+            athletesList={athletesList} // <-- Dùng state từ API
+            selectedAthletes={selectedAthletes} 
+            onChange={setSelectedAthletes} 
+          />
+        </Box>
+
         <Button 
           variant="contained" 
-          onClick={handleOpenPopup} // THAY ĐỔI: Gắn hàm mở popup
+          onClick={handleOpenPopup}
+          disabled={isSaving} // Vô hiệu hóa nút khi đang lưu
           sx={{ 
             width: "100%", 
             maxWidth: 900, 
@@ -129,21 +205,21 @@ export default function NewMeasurement() {
             marginTop: "10px" 
           }}
         >
-          Set Record Results
+          {isSaving ? 'Đang lưu...' : 'Set Record Results'}
         </Button>
       </Box>
 
-      {/* 9. THÊM COMPONENT POPUP VÀO ĐÂY */}
-      {/* Nó sẽ bị ẩn (open={false}) cho đến khi state isPopupOpen = true */}
+      {/* POPUP */}
       <RecordPopup
         open={isPopupOpen}
         handleClose={handleClosePopup}
         onSave={handleSaveResults}
-        athletes={athletesToRecord} // Truyền VĐV đã lọc vào
-        measurementUnit="minutes"   // Truyền đơn vị
+        athletes={athletesToRecord}
+        // Lấy đơn vị (unit) từ bài đo đã chọn
+        measurementUnit={selectedMeasurement?.imperial_unit || 'N/A'} // Sửa: Dùng imperial_unit
+        // Vô hiệu hóa popup khi đang lưu
+        isSaving={isSaving}
       />
-
-    
-    </MeasurementLayout>
-  );
+    </MeasurementLayout>
+  );
 }

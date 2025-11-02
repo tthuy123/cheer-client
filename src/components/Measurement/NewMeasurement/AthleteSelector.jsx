@@ -1,6 +1,4 @@
 // AthleteSelector.jsx
-
-// 1. IMPORT 'React' ĐỂ DÙNG (nếu cần)
 import React from 'react';
 import {
   FormControl,
@@ -14,20 +12,20 @@ import {
 } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
 
-// --- Configuration Constants (Giữ nguyên) ---
 const ITEM_HEIGHT = 48;
 const ITEM_PADDING_TOP = 8;
+
+// --- 1. SỬA MenuProps: Xóa bỏ 'width' cố định ---
 const MenuProps = {
   PaperProps: {
     style: {
       maxHeight: ITEM_HEIGHT * 4.5 + ITEM_PADDING_TOP,
-      width: 900,
     },
   },
 };
 
 // --- Custom Styles (Giữ nguyên) ---
-function getStyles(id, selectedIds, theme) { // Sửa 'name' thành 'id'
+function getStyles(id, selectedIds, theme) {
   return {
     fontWeight:
       selectedIds.indexOf(id) === -1
@@ -40,52 +38,45 @@ function getStyles(id, selectedIds, theme) { // Sửa 'name' thành 'id'
 const CUSTOM_GREEN = '#257951';
 
 // --- AthleteSelector Component ---
-
-// 2. THAY ĐỔI LỚN NHẤT: NHẬN PROPS TỪ CHA
 export default function AthleteSelector({ 
-  athletesList,       // Prop: Danh sách VĐV đầy đủ (VD: [{id, name}, ...])
-  selectedAthletes,   // Prop: Mảng các ID đã chọn (VD: ['id-1', 'id-2'])
-  onChange            // Prop: Hàm để gọi khi có thay đổi
+  athletesList,
+  selectedAthletes,
+  onChange
 }) {
   const theme = useTheme();
 
-  // 3. XÓA BỎ STATE NỘI BỘ
-  // const [selectedAthletes, setSelectedAthletes] = React.useState([...]);
-  
-  // 4. XÓA BỎ DỮ LIỆU HARDCODE
-  // const allAthletes = [ ... ];
-
-  // 5. CẬP NHẬT HÀM handleChange
+  // Logic (handleChange, renderSelectedNames) của bạn đã ĐÚNG, giữ nguyên
   const handleChange = (event) => {
     const {
       target: { value },
     } = event;
     
-    // THAY ĐỔI: Gọi hàm `onChange` từ prop (thay vì `setSelectedAthletes`)
     onChange(
-      // value sẽ là một mảng các ID
       typeof value === 'string' ? value.split(',') : value,
     );
   };
 
-  // 6. HÀM HELPER ĐỂ HIỂN THỊ TÊN TỪ ID
-  // (Vì `selectedAthletes` giờ là mảng các ID)
-  const renderSelectedNames = (selectedIds) => {
+const renderSelectedNames = (selectedIds) => {
     if (!athletesList || athletesList.length === 0) return '';
     
-    // Tìm tên tương ứng với ID và nối chuỗi
     return selectedIds
       .map(id => {
         const athlete = athletesList.find(a => a.id === id);
-        return athlete ? athlete.name : '';
+        // SỬA: Trả về null (hoặc undefined) nếu không tìm thấy
+        return athlete ? athlete.name : null; 
       })
+      // THÊM: Lọc ra tất cả các giá trị null/undefined/rỗng
+      .filter(name => !!name) 
       .join(', ');
   };
 
 
   return (
-    // Box và Typography của bạn (Giữ nguyên)
-    <Box sx={{ m: 1, width: 900 }}>
+    // --- 2. SỬA Box: Dùng width: '100%' để khớp với cha ---
+    <Box sx={{ 
+        m: 1, 
+        width: '100%' // <-- SỬA TỪ 'width: 900'
+    }}>
       <Typography 
         variant="body2" 
         sx={{ 
@@ -107,31 +98,21 @@ export default function AthleteSelector({
           labelId="athlete-multiple-checkbox-label"
           id="athlete-multiple-checkbox"
           multiple
-          
-          // 7. SỬ DỤNG PROPS
-          value={selectedAthletes} // Dùng mảng ID từ prop
-          onChange={handleChange}  // Dùng hàm xử lý đã cập nhật
-          
+          value={selectedAthletes}
+          onChange={handleChange}
           input={<OutlinedInput />} 
-          
-          // 8. CẬP NHẬT renderValue ĐỂ DÙNG HÀM HELPER
-          renderValue={renderSelectedNames} // Hiển thị tên thay vì ID
-          
-          MenuProps={MenuProps}
+          renderValue={renderSelectedNames}
           sx={{
             textAlign: 'left', 
           }}
         >
-          {/* 9. MAP QUA `athletesList` (TỪ PROP) */}
           {athletesList.map((athlete) => (
             <MenuItem
-              // 10. DÙNG `athlete.id` VÀ `athlete.name`
               key={athlete.id}
-              value={athlete.id} // Giá trị là ID
+              value={athlete.id}
               style={getStyles(athlete.id, selectedAthletes, theme)}
             >
               <Checkbox 
-                // Kiểm tra xem ID có trong mảng `selectedAthletes` (từ prop) không
                 checked={selectedAthletes.indexOf(athlete.id) > -1} 
                 sx={{
                   color: CUSTOM_GREEN,
@@ -140,7 +121,7 @@ export default function AthleteSelector({
                   }
                 }}
               />
-              <ListItemText primary={athlete.name} /> {/* Hiển thị tên */}
+              <ListItemText primary={athlete.name} />
             </MenuItem>
           ))}
         </Select>
