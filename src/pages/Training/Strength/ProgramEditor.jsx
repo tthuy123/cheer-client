@@ -69,14 +69,27 @@ const toNum = (v) => {
   return Number.isNaN(n) ? undefined : n;
 };
 
+// Thay thế hàm cũ (khoảng dòng 80)
 const buildExercisesPayload = (exs) =>
   exs.map((ex) => {
-    const setsCount = Array.isArray(ex.sets) ? ex.sets.length : 0;
-    const repsVal = ex.sets?.[0]?.reps ?? 0;
+    // Lấy TẤT CẢ các set và chỉ giữ lại thông tin cần thiết
+    // mà bạn muốn lưu làm 'kế hoạch'
+    const setsPayload = Array.isArray(ex.sets)
+      ? ex.sets.map(s => ({
+          reps: Number(s.reps ?? 10),
+          rpe: Number(s.rpe ?? 7),
+          weight: Number(s.weight ?? 0),
+          // Thêm bất kỳ trường nào khác từ 's' mà bạn muốn lưu
+        }))
+      : []; // Nếu không có set nào, gửi mảng rỗng
+            
     return {
-      exercise_id: toNum(ex.exercise_id ?? ex.id), // Ưu tiên số
+      exercise_id: toNum(ex.exercise_id ?? ex.id),
       type: ex.name ?? "Exercise",
-      sets: { sets: setsCount, reps: repsVal, weight: 0 }, // không dùng weight -> 0
+      
+      // Gửi TẤT CẢ các set dưới dạng MẢNG
+      sets: setsPayload, // <--- THAY ĐỔI LỚN NHẤT
+      
       status: 1,
     };
   });
@@ -105,7 +118,7 @@ export default function ProgramEditor() {
 
   const [programName, setProgramName] = useState("");
   const [trainingType, setTrainingType] = useState("general");
-  const [programScope, setProgramScope] = useState(state?.programType ?? "my"); // "team" | "my"
+  const [programScope, setProgramScope] = useState(state?.programType ?? "team"); // "team" | "my"
   const [exercises, setExercises] = useState(
     state?.selectedExercises?.length
       ? toEditorExercises(state.selectedExercises, "general")

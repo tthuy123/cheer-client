@@ -28,14 +28,50 @@ function splitCues(cues) {
     .filter(Boolean);
   return parts.length ? parts : [String(cues)];
 }
+// Thay thế hàm cũ (khoảng dòng 40 trong ExerciseSessionPage.jsx)
 function buildSetsArray(setsObj) {
+  // MỚI: Kiểm tra xem 'setsObj' có phải là một MẢNG không
+  // (Đây là định dạng mới bạn muốn lưu)
+  if (Array.isArray(setsObj)) {
+    // Nếu là mảng, chỉ cần map và thêm 'id' + 'done'
+    return setsObj.map((s, i) => ({
+      id: `s${i + 1}`,
+      weight: Number(s.weight ?? 0),
+      reps: Number(s.reps ?? 10),
+      rpe: Number(s.rpe ?? 7),
+      done: false, // Luôn bắt đầu là 'chưa xong'
+    }));
+  }
+
+  // CŨ: Nếu 'setsObj' không phải mảng, nó là 'tóm tắt'
+  // (Chúng ta giữ lại logic này để các bài tập cũ vẫn hoạt động)
   const count = Number(setsObj?.sets ?? 0);
   const reps = Number(setsObj?.reps ?? 10);
   const weight = Number(setsObj?.weight ?? 0);
+  const rpe = Number(setsObj?.rpe ?? 7); // Đọc rpe từ tóm tắt (đã sửa ở lần trước)
+  
   return Array.from({ length: count }, (_, i) => ({
-    id: `s${i + 1}`, weight, reps, rpe: 7, done: false,
+    id: `s${i + 1}`, weight, reps, rpe, done: false,
   }));
 }
+
+// --- Helpers cho Lưu trữ tạm (Session Storage) ---
+const STORAGE_KEY = (pId) => `inProgressWorkout_${pId}`;
+
+function getWorkoutStorage(programId) {
+  return parseMaybeJson(sessionStorage.getItem(STORAGE_KEY(programId)), {});
+}
+
+function setWorkoutStorage(programId, programExerciseId, data) {
+  const allData = getWorkoutStorage(programId);
+  allData[programExerciseId] = data;
+  sessionStorage.setItem(STORAGE_KEY(programId), JSON.stringify(allData));
+}
+
+function clearWorkoutStorage(programId) {
+  sessionStorage.removeItem(STORAGE_KEY(programId));
+}
+// ------------------------------------------------
 
 export default function ExerciseSessionPage() {
   const userId = useSelector((s) => s.auth.user_id);
@@ -61,22 +97,48 @@ export default function ExerciseSessionPage() {
         if (!mounted) return;
         setProgram(data);
 
+        // 1. Nếu bắt đầu chương trình mới (không có ID bài tập), xóa rác cũ
+        const isStartingFresh = !programExerciseId;
+        if (isStartingFresh) {
+          clearWorkoutStorage(programId);
+        }
+
         const list = Array.isArray(data?.exercises) ? data.exercises : [];
         if (!list.length) { setExercise(null); setSets([]); return; }
+        // --- BẮT ĐẦU THÊM DEBUG ---
+        console.log("--- DEBUG: Toàn bộ danh sách (list) ---");
+        console.log(list);
+        // --- KẾT THÚC THÊM DEBUG ---
 
         const chosen =
           programExerciseId
             ? list.find((x) => String(x.program_exercise_id) === String(programExerciseId)) || list[0]
             : list[0];
-
+// --- BẮT ĐẦU THÊM DEBUG ---
+        console.log("--- DEBUG: Bài tập được chọn (chosen) ---");
+        console.log(chosen);
+        // --- KẾT THÚC THÊM DEBUG ---
         const normalized = {
           ...chosen,
-          _setsArray: buildSetsArray(chosen.sets),
+          _setsArray: buildSetsArray(chosen.sets), // Vẫn build mảng gốc
           _cuesArray: splitCues(chosen?.exercise_meta?.cues),
           _pastArray: parseMaybeJson(chosen?.past_workouts, []),
         };
+
+        // 2. Lấy dữ liệu đã lưu tạm (nếu có)
+        const storedData = getWorkoutStorage(programId)?.[normalized.program_exercise_id];
+        
         setExercise(normalized);
-        setSets(normalized._setsArray);
+
+        // 3. Ưu tiên dùng dữ liệu lưu tạm
+        if (storedData) {
+          setSets(storedData.sets);
+          setNotes(storedData.notes);
+        } else {
+          // Nếu không, dùng dữ liệu mặc định
+          setSets(normalized._setsArray);
+          setNotes(""); // Reset ghi chú
+        }
       } catch (e) {
         console.error(e);
         if (!mounted) return;
@@ -87,6 +149,19 @@ export default function ExerciseSessionPage() {
     })();
     return () => { mounted = false; };
   }, [userId, programId, programExerciseId, token]);
+
+  // Tự động LƯU TẠM vào sessionStorage khi 'sets' hoặc 'notes' thay đổi
+  useEffect(() => {
+    // Đừng lưu nếu đang tải hoặc chưa có bài tập
+    if (loading || !exercise) return;
+
+    setWorkoutStorage(programId, exercise.program_exercise_id, { 
+      sets, 
+      notes, 
+      exercise_id: exercise.exercise_id // Quan trọng: lưu cả exercise_id
+    });
+  }, [sets, notes, programId, exercise, loading]);
+
 
   // vị trí hiện tại + prev/next
   const exercisesList = program?.exercises ?? [];
@@ -110,12 +185,19 @@ export default function ExerciseSessionPage() {
     return `${count} sets × ${reps} reps × ${rpe} RPE`;
   }, [sets]);
 
-  // chỉ các set đã hoàn thành
-  const completedSets = useMemo(
-    () => sets.filter((s) => s.done),
-    [sets]
-  );
-  const hasAnyCompleted = completedSets.length > 0;
+  // Kiểm tra xem CÓ BẤT KỲ set 'done' nào TRONG TOÀN BỘ CHƯƠNG TRÌNH không
+  const hasAnyCompletedInProgram = useMemo(() => {
+    if (!programId) return false;
+    const allData = getWorkoutStorage(programId);
+    for (const data of Object.values(allData)) {
+      if (Array.isArray(data.sets) && data.sets.some(s => s.done)) {
+        return true; // Tìm thấy ít nhất 1 set 'done'
+      }
+    }
+    return false;
+    // 'sets' được thêm vào dependency array để trigger tính toán lại
+    // khi user check 'done' ở bài tập cuối cùng.
+  }, [programId, sets]); 
 
   // handlers
   const addSet = () => setSets((p) => [...p, { id: `s_${Date.now()}`, weight: 0, reps: 10, rpe: 7, done: false }]);
@@ -133,42 +215,78 @@ export default function ExerciseSessionPage() {
     navigate("/training/strength"); // tuỳ UX
   };
 
-  const handleStartWorkout = () => {};
+  // const handleStartWorkout = () => {}; // (đã comment)
 
-  // chỉ gửi các set đã hoàn thành; nếu không có set hoàn thành → không gửi
-  const handleSaveWorkout = async () => {
-    if (!exercise) return;
-    if (!hasAnyCompleted) return; // không gửi nếu chưa hoàn thành set nào
-
-    const payload = {
-      note: notes,
-      sets: completedSets.map(({ weight, reps, rpe, done }) => ({ weight, reps, rpe, done: Boolean(done) })),
-      exercise_id: exercise.exercise_id, // optional
-    };
-    try {
-      const result = await Program.SaveWorkout(
-        userId,
-        programId,
-        exercise.program_exercise_id,
-        payload,
-        token
-      );
-      console.log("Saved workout:", result.workout);
-    } catch (e) {
-      console.error("Save workout failed:", e);
-    }
-  };
+  // (Hàm handleSaveWorkout cũ đã bị xóa)
 
   const handleNext = async () => {
-    // luôn thử lưu (chỉ gửi khi có set hoàn thành)
-    await handleSaveWorkout();
+    setLoading(true); // Bật loading cho cả Next và Complete
 
     if (isLast) {
-      if (!hasAnyCompleted) return; // chặn Complete nếu chưa có set nào done
-      return completeProgram();
+      // --- ĐÂY LÀ BÀI TẬP CUỐI CÙNG (Nút "Complete Program") ---
+      
+      // Kiểm tra lần cuối (mặc dù nút đã bị disable)
+      if (!hasAnyCompletedInProgram) {
+        setLoading(false);
+        return;
+      }
+      
+      try {
+        // 1. Lấy TẤT CẢ dữ liệu đã lưu tạm
+        const allStoredData = getWorkoutStorage(programId);
+
+        // 2. Chuẩn bị các promise để gửi API
+        const savePromises = [];
+
+        for (const [peId, data] of Object.entries(allStoredData)) {
+          // Lọc ra các set đã 'done' của mỗi bài
+          const completedSets = Array.isArray(data.sets) ? data.sets.filter(s => s.done) : [];
+          
+          // Chỉ gửi API nếu bài tập đó có set 'done'
+          if (completedSets.length > 0) {
+            const payload = {
+              note: data.notes,
+              sets: completedSets.map(({ weight, reps, rpe, done }) => ({ weight, reps, rpe, done: Boolean(done) })),
+              exercise_id: data.exercise_id, // Lấy từ storage
+            };
+            
+            // Thêm promise vào mảng
+            savePromises.push(
+              Program.SaveWorkout(userId, programId, peId, payload, token)
+            );
+          }
+        }
+
+        // 3. Gửi tất cả API song song
+        if (savePromises.length > 0) {
+          await Promise.all(savePromises);
+          console.log(`Đã lưu thành công ${savePromises.length} bài tập.`);
+        }
+
+        // 4. Xóa storage tạm
+        clearWorkoutStorage(programId);
+        
+        // 5. Hoàn tất chương trình
+        setLoading(false);
+        return completeProgram();
+
+      } catch (err) {
+        console.error("Lỗi khi lưu hàng loạt:", err);
+        setErr("Đã xảy ra lỗi khi lưu chương trình. Vui lòng thử lại."); // Báo lỗi
+        setLoading(false);
+      }
+
+    } else {
+      // --- ĐÂY LÀ CÁC BÀI TẬP GIỮA (Nút "Next Exercise") ---
+      
+      // Chỉ điều hướng, KHÔNG lưu (dữ liệu đã tự lưu vào sessionStorage)
+      if (nextExercise) {
+        setLoading(false); // Tắt loading
+        goToExercise(nextExercise.program_exercise_id);
+      }
     }
-    if (nextExercise) goToExercise(nextExercise.program_exercise_id);
   };
+
 
   // render
   if (loading) {
@@ -200,6 +318,7 @@ export default function ExerciseSessionPage() {
 
   const past = Array.isArray(exercise?._pastArray)
     ? exercise._pastArray.map((item) => ({
+        id: item.training_data_id || item.created_at,
         date: (item.created_at || "").slice(0, 10),
         sets: Array.isArray(item.sets)
           ? item.sets.map((s) => ({
@@ -211,9 +330,12 @@ export default function ExerciseSessionPage() {
       }))
     : [];
 
-  // trạng thái nút Next/Complete
-  const nextDisabled = isLast && !hasAnyCompleted;
-
+  // trạng thái nút Next/Complete (Đã cập nhật)
+  const nextDisabled = isLast && !hasAnyCompletedInProgram;
+// --- THÊM DEBUG CUỐI CÙNG ---
+  console.log("--- DEBUG: Dữ liệu 'past' cuối cùng (trước khi render) ---");
+  console.log(past);
+  // --- KẾT THÚC DEBUG ---
   return (
     <Box sx={{ width: "100%", px: 3, py: 2 }}>
       <ExerciseHero
@@ -237,9 +359,9 @@ export default function ExerciseSessionPage() {
         <SetsEditor title={title} sets={sets} onChange={updateSet} onRemove={removeSet} />
         <Divider sx={{ my: 2 }} />
         <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-          <Button variant="contained" onClick={handleStartWorkout} sx={{ textTransform: "none" }}>
+          {/* <Button variant="contained" onClick={handleStartWorkout} sx={{ textTransform: "none" }}>
             Start
-          </Button>
+          </Button> */}
           <Box sx={{ ml: "auto" }}>
             <TimeBar />
           </Box>
