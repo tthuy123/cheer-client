@@ -1,136 +1,150 @@
 // AthleteSelector.jsx
 
-import * as React from 'react';
+// 1. IMPORT 'React' ĐỂ DÙNG (nếu cần)
+import React from 'react';
 import {
   FormControl,
-  InputLabel,
   Select,
   MenuItem,
   OutlinedInput,
   Checkbox,
   ListItemText,
-  // Đã xóa 'colors' vì không sử dụng
+  Box,
+  Typography,
 } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
 
-// --- Configuration Constants ---
+// --- Configuration Constants (Giữ nguyên) ---
 const ITEM_HEIGHT = 48;
 const ITEM_PADDING_TOP = 8;
 const MenuProps = {
   PaperProps: {
     style: {
       maxHeight: ITEM_HEIGHT * 4.5 + ITEM_PADDING_TOP,
-      width: 250,
+      width: 900,
     },
   },
 };
 
-// --- Mock Data ---
-const allAthletes = [
-  'athur doccle',
-  'bethony cimon',
-  'cecile cimon',
-  'david elis',
-  'eva long',
-  'frank zola',
-];
-
-// --- Custom Styles for Text (optional, to match the image better) ---
-function getStyles(name, athleteName, theme) {
+// --- Custom Styles (Giữ nguyên) ---
+function getStyles(id, selectedIds, theme) { // Sửa 'name' thành 'id'
   return {
     fontWeight:
-      athleteName.indexOf(name) === -1
+      selectedIds.indexOf(id) === -1
         ? theme.typography.fontWeightRegular
         : theme.typography.fontWeightMedium,
   };
 }
 
-// --- Màu Xanh Lá Tùy Chỉnh ---
+// --- Màu Xanh Lá Tùy Chỉnh (Giữ nguyên) ---
 const CUSTOM_GREEN = '#257951';
 
 // --- AthleteSelector Component ---
 
-/**
- * A custom Material-UI component for selecting multiple athletes from a dropdown.
- * Thay đổi màu mặc định sang xanh lá (#257951).
- */
-export default function AthleteSelector() {
+// 2. THAY ĐỔI LỚN NHẤT: NHẬN PROPS TỪ CHA
+export default function AthleteSelector({ 
+  athletesList,       // Prop: Danh sách VĐV đầy đủ (VD: [{id, name}, ...])
+  selectedAthletes,   // Prop: Mảng các ID đã chọn (VD: ['id-1', 'id-2'])
+  onChange            // Prop: Hàm để gọi khi có thay đổi
+}) {
   const theme = useTheme();
-  const [selectedAthletes, setSelectedAthletes] = React.useState([
-    'athur doccle',
-    'bethony cimon',
-    'cecile cimon',
-  ]); // Initial state matching the image
 
+  // 3. XÓA BỎ STATE NỘI BỘ
+  // const [selectedAthletes, setSelectedAthletes] = React.useState([...]);
+  
+  // 4. XÓA BỎ DỮ LIỆU HARDCODE
+  // const allAthletes = [ ... ];
+
+  // 5. CẬP NHẬT HÀM handleChange
   const handleChange = (event) => {
     const {
       target: { value },
     } = event;
-    // On autofill we get a stringified value.
-    setSelectedAthletes(
+    
+    // THAY ĐỔI: Gọi hàm `onChange` từ prop (thay vì `setSelectedAthletes`)
+    onChange(
+      // value sẽ là một mảng các ID
       typeof value === 'string' ? value.split(',') : value,
     );
   };
 
-  return (
-    <FormControl 
-        sx={{ m: 1, width: 400 }}
-        // Áp dụng màu xanh lá cho viền focus và label focus
-        // Đây là cách đơn giản nhất để ghi đè màu 'primary' mặc định của MUI.
-        color="success" 
-        
-        // Hoặc bạn có thể sử dụng trực tiếp SX để tùy chỉnh màu viền:
-        /*
-        sx={{ 
-            m: 1, 
-            width: 400,
-            // Custom CSS cho viền khi focus
-            '& .MuiOutlinedInput-root.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                borderColor: CUSTOM_GREEN, 
-            },
-            // Custom CSS cho InputLabel khi focus
-            '& .MuiInputLabel-root.Mui-focused': {
-                color: CUSTOM_GREEN, 
-            }
-        }}
-        */
-    >
-      {/* InputLabel: Màu sẽ theo color="success" ở FormControl hoặc màu mặc định nếu không focus */}
-      <InputLabel id="athlete-multiple-checkbox-label">Select Athlete</InputLabel>
+  // 6. HÀM HELPER ĐỂ HIỂN THỊ TÊN TỪ ID
+  // (Vì `selectedAthletes` giờ là mảng các ID)
+  const renderSelectedNames = (selectedIds) => {
+    if (!athletesList || athletesList.length === 0) return '';
+    
+    // Tìm tên tương ứng với ID và nối chuỗi
+    return selectedIds
+      .map(id => {
+        const athlete = athletesList.find(a => a.id === id);
+        return athlete ? athlete.name : '';
+      })
+      .join(', ');
+  };
 
-      <Select
-        labelId="athlete-multiple-checkbox-label"
-        id="athlete-multiple-checkbox"
-        multiple // Key prop for multiple selection
-        value={selectedAthletes}
-        onChange={handleChange}
-        // Để Select sử dụng màu của FormControl, chúng ta không đặt màu ở đây
-        input={<OutlinedInput label="Select Athlete" />}
-        renderValue={(selected) => selected.join(', ')} // Display selected values in the input field
-        MenuProps={MenuProps}
+
+  return (
+    // Box và Typography của bạn (Giữ nguyên)
+    <Box sx={{ m: 1, width: 900 }}>
+      <Typography 
+        variant="body2" 
+        sx={{ 
+          marginBottom: 1, 
+          color: '#56616f', 
+          fontWeight: 'bold',
+          textAlign: 'left',
+        }}
+        id="athlete-multiple-checkbox-label"
       >
-        {allAthletes.map((name) => (
-          <MenuItem
-            key={name}
-            value={name}
-            style={getStyles(name, selectedAthletes, theme)}
-          >
-            {/* Checkbox: Áp dụng màu xanh lá trực tiếp */}
-            <Checkbox 
-                checked={selectedAthletes.indexOf(name) > -1} 
+        Select Athlete
+      </Typography>
+
+      <FormControl 
+        fullWidth
+        color="success" 
+      >
+        <Select
+          labelId="athlete-multiple-checkbox-label"
+          id="athlete-multiple-checkbox"
+          multiple
+          
+          // 7. SỬ DỤNG PROPS
+          value={selectedAthletes} // Dùng mảng ID từ prop
+          onChange={handleChange}  // Dùng hàm xử lý đã cập nhật
+          
+          input={<OutlinedInput />} 
+          
+          // 8. CẬP NHẬT renderValue ĐỂ DÙNG HÀM HELPER
+          renderValue={renderSelectedNames} // Hiển thị tên thay vì ID
+          
+          MenuProps={MenuProps}
+          sx={{
+            textAlign: 'left', 
+          }}
+        >
+          {/* 9. MAP QUA `athletesList` (TỪ PROP) */}
+          {athletesList.map((athlete) => (
+            <MenuItem
+              // 10. DÙNG `athlete.id` VÀ `athlete.name`
+              key={athlete.id}
+              value={athlete.id} // Giá trị là ID
+              style={getStyles(athlete.id, selectedAthletes, theme)}
+            >
+              <Checkbox 
+                // Kiểm tra xem ID có trong mảng `selectedAthletes` (từ prop) không
+                checked={selectedAthletes.indexOf(athlete.id) > -1} 
                 sx={{
-                    // Áp dụng màu xanh lá (#257951) cho Checkbox khi được chọn
+                  color: CUSTOM_GREEN,
+                  '&.Mui-checked': {
                     color: CUSTOM_GREEN,
-                    '&.Mui-checked': {
-                        color: CUSTOM_GREEN,
-                    }
+                  }
                 }}
-            />
-            {/* Display the athlete's name */}
-            <ListItemText primary={name} />
-          </MenuItem>
-        ))}
-      </Select>
-    </FormControl>
+              />
+              <ListItemText primary={athlete.name} /> {/* Hiển thị tên */}
+            </MenuItem>
+          ))}
+        </Select>
+      </FormControl>
+    </Box>
   );
 }

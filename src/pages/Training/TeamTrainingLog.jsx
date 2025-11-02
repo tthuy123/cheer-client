@@ -15,9 +15,9 @@ import {
 import TrainingLayout from '../../components/layouts/TrainingLayout';
 
 const sampleRows = [
-  { athlete: "Nhung Hong", strengthDays: 0, teamAvgDays: 1, cardioMin: 0, teamAvgMin: 0 },
-  { athlete: "Quan Nguyen", strengthDays: 2, teamAvgDays: 1, cardioMin: 0, teamAvgMin: 0 },
-  { athlete: "Taylor nguyen", strengthDays: 0, teamAvgDays: 1, cardioMin: 0, teamAvgMin: 0 },
+  { athlete: "Nhung Hong", strengthDays: 10, teamAvgDays: 12, cardioMin: 180, teamAvgMin: 164 },
+  { athlete: "Quan Nguyen", strengthDays: 11, teamAvgDays: 12, cardioMin: 150, teamAvgMin: 164 },
+  { athlete: "Taylor nguyen", strengthDays: 15, teamAvgDays: 12, cardioMin: 165, teamAvgMin: 164 },
 ];
 
 // Reusable table component
@@ -35,18 +35,18 @@ export function LogTable({ rows }) {
             </TableCell>
             <TableCell
               align="center"
-              colSpan={2}
+              colSpan={4}
               sx={{ fontWeight: 600, fontSize: 18, borderBottom: 1, borderColor: "divider" }}
             >
               Strength Training
             </TableCell>
-            <TableCell
+            {/*<TableCell
               align="center"
               colSpan={2}
               sx={{ fontWeight: 600, fontSize: 18, borderBottom: 1, borderColor: "divider" }}
             >
               Weekly Cardio
-            </TableCell>
+            </TableCell>*/}
           </TableRow>
 
           {/* Sub-header row */}

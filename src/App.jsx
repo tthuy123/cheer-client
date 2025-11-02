@@ -19,8 +19,12 @@ import TopPerformancePage from './pages/Measurement/TopPerformancePage';
 import TeamData from './pages/Measurement/TeamData';
 import ProgramEditor from './pages/Training/Strength/ProgramEditor';
 import ExerciseSessionPage from './pages/Training/Strength/ExcerciseSessionPage';
-
 import NewMeasurement from './pages/Measurement/NewMeasurement';
+
+import NewCheckOff from './pages/Checkoff/NewCheckOff.jsx';
+import CheckOffReview from './pages/Checkoff/CheckOffReview.jsx';
+import CheckOffTeamData from './pages/Checkoff/CheckOffTeamData.jsx';
+
 
 function App() {
 
@@ -48,9 +52,14 @@ function App() {
           /* Measurement */
           <Route path='/measurement/new' element={<NewMeasurement  />} />
 
+          /*Checkoff*/
+          <Route path='/check-off/new' element={<NewCheckOff />} />
+          <Route path='/check-off/review' element={<CheckOffReview />} />
+          <Route path='/check-off/team-data' element={<CheckOffTeamData />} />
 
           {/* <Route path='/test7' element={<CreateProgram />} /> */}
           {/* <Route path='/test2' element={<DropSelectMeas />} /> */}
+          {/* <Route path='/test4' element={<ProgressChart />} /> */}
           {/* <Route path='/test4' element={<ProgressChart />} /> */}
 
 
