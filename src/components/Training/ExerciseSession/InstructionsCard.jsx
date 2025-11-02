@@ -22,7 +22,7 @@ export default function InstructionsCard({ instructions, cues }) {
         align="left"
         // sx={{ whiteSpace: 'pre-line' }}
       >
-        <Typography sx={{ fontWeight: 700, mb: 0.5 }}>Cues</Typography>
+        <Typography sx={{ fontWeight: 700, mb: 0.5 }}>Cues (Safety Warnings)</Typography>
         <Typography variant="body2" color="text.secondary">
           {cues?.map((c, i) => `${i + 1}. ${c}`).join("\n")}
         </Typography>

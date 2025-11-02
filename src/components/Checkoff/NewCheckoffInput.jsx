@@ -1,4 +1,4 @@
-// components/CheckOff/NewCheckoffInput.jsx
+// components/CheckOff/NewCheckOffInput.jsx
 
 'use client';
 
@@ -50,7 +50,7 @@ const FormGroup = ({ label, children }) => (
  * Component "dumb" chỉ hiển thị 4 ô input đầu tiên.
  * Nhận tất cả state và setters từ component cha.
  */
-export default function NewCheckoffInput({
+export default function NewCheckOffInput({
   todayDate,
   dueDate,
   setDueDate,

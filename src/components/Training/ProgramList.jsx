@@ -1,7 +1,8 @@
 // src/components/Training/ProgramList.jsx
 import React from "react";
 import { Card, CardContent, Typography, Box, IconButton, Button } from "@mui/material";
-import ContentCopyIcon from "@mui/icons-material/ContentCopy";
+//import ContentCopyIcon from "@mui/icons-material/ContentCopy";
+import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 import PlayArrowIcon from "@mui/icons-material/PlayArrow";
 
 const ProgramCard = ({ program, onStart }) => (
@@ -42,8 +43,9 @@ const ProgramCard = ({ program, onStart }) => (
       </Box>
 
       <Box sx={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 1 }}>
-        <IconButton size="small" sx={{ color: "#4a5566" }}>
-          <ContentCopyIcon fontSize="small" />
+        <IconButton size="medium" sx={{ color: "#9ca3b1" }}>
+          {/* <ContentCopyIcon fontSize="small" /> */}
+          <DeleteOutlineIcon fontSize="medium"  />
         </IconButton>
 
         <Button

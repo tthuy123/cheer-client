@@ -48,7 +48,7 @@ export default function SetRow({ index, data, onChange, onRemove }) {
       >
         <Box>
           <Typography variant="caption" color="text.secondary">
-            Weight
+            Weight (lbs)
           </Typography>
           <TextField
             fullWidth
@@ -74,7 +74,7 @@ export default function SetRow({ index, data, onChange, onRemove }) {
 
         <Box>
           <Typography variant="caption" color="text.secondary">
-            RPE
+            RPE (1-11)
           </Typography>
           <TextField
             fullWidth
