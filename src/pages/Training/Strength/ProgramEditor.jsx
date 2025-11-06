@@ -319,7 +319,7 @@ export default function ProgramEditor() {
           <Typography sx={{ fontWeight: 700, color: "success.dark" }}>
             Selected Exercises
           </Typography>
-          <Box sx={{ ml: "auto" }}>
+          {/* <Box sx={{ ml: "auto" }}>
             <Link
               component="button"
               type="button"
@@ -329,7 +329,7 @@ export default function ProgramEditor() {
             >
               + Add Exercise
             </Link>
-          </Box>
+          </Box> */}
         </Box>
 
         {/* Selected exercises */}

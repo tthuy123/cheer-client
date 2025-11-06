@@ -35,7 +35,8 @@ export default function ExerciseEditorCard({
   };
 
   // Grid mới: Set | RepsInput(1fr) | RepsLbl(56) | RPEInput(1fr) | RPELbl(56) | Remove(28)
-  const cols = "84px minmax(180px,1fr) 56px minmax(180px,1fr) 56px 28px";
+  const cols = "84px minmax(180px,1fr) 100px minmax(180px,1fr) 120px 20px";
+    //const cols = "84px 1fr 100px 1fr 56px 28px";
 
   return (
     <Box
@@ -78,12 +79,13 @@ export default function ExerciseEditorCard({
             "@media (max-width: 900px)": {
               // Vẫn dài ra nhưng giữ tối thiểu 140px cho input
               gridTemplateColumns:
-                "84px minmax(140px,1fr) 48px minmax(140px,1fr) 48px 28px",
+              "84px minmax(140px,1fr) 48px minmax(140px,1fr) 48px 28px",
+                //"84px 1fr 60px 1fr 48px 28px",
             },
           }}
         >
           {/* Set label */}
-          <Typography color="text.secondary">{`Set ${idx + 1}`}</Typography>
+          <Typography color="text.secondary"  sx={{ fontWeight: 'bold' }}  >{`Set ${idx + 1}:`}</Typography>
 
           {/* Reps input (KÉO DÀI) */}
           <TextField
@@ -95,7 +97,7 @@ export default function ExerciseEditorCard({
             inputProps={{ min: 0 }}
             sx={{ "& input": { textAlign: "center" } }}
           />
-          <Typography color="text.secondary" sx={{ textAlign: "right" }}>
+          <Typography color="text.secondary" sx={{ textAlign: "left" }}>
             Reps
           </Typography>
 
@@ -109,8 +111,8 @@ export default function ExerciseEditorCard({
             inputProps={{ min: 0, max: 10, step: 1 }}
             sx={{ "& input": { textAlign: "center" } }}
           />
-          <Typography color="text.secondary" sx={{ textAlign: "right" }}>
-            RPE
+          <Typography color="text.secondary" sx={{ textAlign: "left" }}>
+            RPE (1-11)
           </Typography>
 
           {/* Remove set */}

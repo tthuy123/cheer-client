@@ -362,9 +362,9 @@ export default function ExerciseSessionPage() {
           {/* <Button variant="contained" onClick={handleStartWorkout} sx={{ textTransform: "none" }}>
             Start
           </Button> */}
-          <Box sx={{ ml: "auto" }}>
+          {/* <Box sx={{ ml: "auto" }}>
             <TimeBar />
-          </Box>
+          </Box> */}
         </Box>
         <Box sx={{ textAlign: "center", py: 1 }}>
           <Button

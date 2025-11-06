@@ -10,7 +10,7 @@ import {
 } from '@mui/material';
 // 1. Import 2 component con
 import CheckOffLayout from '../../components/layouts/CheckOffLayout';
-import NewCheckoffInput from '../../components/Checkoff/NewCheckOffInput';
+import NewCheckOffInput from '../../components/Checkoff/NewCheckOffInput';
 import CheckOffAthleteSelector from '../../components/Checkoff/CheckOffAthleteSelector';
 
 
@@ -90,7 +90,7 @@ export default function NewCheckOff() {
       <Box sx={{ width: '100%', maxWidth: '600px' }}>
 
         {/* 4. Truyền state + setters xuống component Input */}
-        <NewCheckoffInput
+        <NewCheckOffInput
           todayDate={todayDate}
           dueDate={dueDate}
           setDueDate={setDueDate}
