@@ -34,62 +34,130 @@ const CustomTextField = styled(TextField)({
   },
 });
 
+// ---- Helpers
+const isMinutesUnit = (unit) =>
+  !!unit && ['minute', 'minutes', 'min', 'mins'].includes(String(unit).toLowerCase().trim());
+
+/**
+ * Kiểm tra input theo unit.
+ * minutes:
+ *  - Cho phép: "m" | "mm:ss" | "h:mm:ss"
+ *  - Ràng buộc: 0 <= mm <= 60, 0 <= ss <= 60, nếu chỉ "m" thì 0 <= m <= 60
+ * others:
+ *  - Chỉ số (có thể thập phân)
+ * Trả về { ok: boolean, message: string|null }
+ */
+function validateByUnit(input, unit) {
+  const val = (input ?? '').toString().trim();
+  if (val === '') return { ok: false, message: 'Vui lòng nhập giá trị.' };
+
+  if (isMinutesUnit(unit)) {
+    // minutes mode
+    const parts = val.split(':').map((p) => p.trim());
+
+    // chỉ "m"
+    if (parts.length === 1) {
+      const m = Number(parts[0]);
+      if (!Number.isFinite(m)) return { ok: false, message: 'Chỉ nhập số phút hoặc mm:ss / h:mm:ss.' };
+      if (m < 0 || m > 60) return { ok: false, message: 'Phút phải trong khoảng 0–60.' };
+      return { ok: true, message: null };
+    }
+
+    // "mm:ss"
+    if (parts.length === 2) {
+      const m = Number(parts[0]);
+      const s = Number(parts[1]);
+      if (![m, s].every(Number.isFinite)) {
+        return { ok: false, message: 'Định dạng không hợp lệ. Dùng mm:ss (vd: 12:30).' };
+      }
+      if (m < 0 || m > 60) return { ok: false, message: 'Phần phút (mm) phải 0–60.' };
+      if (s < 0 || s > 60) return { ok: false, message: 'Phần giây (ss) phải 0–60.' };
+      return { ok: true, message: null };
+    }
+
+    // "h:mm:ss"
+    if (parts.length === 3) {
+      const h = Number(parts[0]);
+      const m = Number(parts[1]);
+      const s = Number(parts[2]);
+      if (![h, m, s].every(Number.isFinite)) {
+        return { ok: false, message: 'Định dạng không hợp lệ. Dùng h:mm:ss (vd: 1:05:30).' };
+      }
+      if (h < 0) return { ok: false, message: 'Giờ (h) không được âm.' };
+      if (m < 0 || m > 60) return { ok: false, message: 'Phần phút (mm) phải 0–60.' };
+      if (s < 0 || s > 60) return { ok: false, message: 'Phần giây (ss) phải 0–60.' };
+      return { ok: true, message: null };
+    }
+
+    return { ok: false, message: 'Định dạng không hợp lệ. Dùng m | mm:ss | h:mm:ss.' };
+  }
+
+  // unit khác
+  const num = Number(val);
+  if (!Number.isFinite(num)) return { ok: false, message: 'Chỉ nhập số.' };
+  return { ok: true, message: null };
+}
+
 // Component chính
-// 2. THAY ĐỔI PROPS: Thêm 'athletes', 'onSave', và 'measurementUnit'
-const RecordPopup = ({ 
-  open, 
-  handleClose, 
+// 2. THAY ĐỔI PROPS: Thêm 'athletes', 'onSave', 'measurementUnit', (tùy chọn) 'isSaving'
+const RecordPopup = ({
+  open,
+  handleClose,
   athletes = [], // Mảng các VĐV (vd: [{id, name}, ...])
   onSave,        // Hàm để gửi dữ liệu về
-  measurementUnit = "units" // Đơn vị đo
+  measurementUnit = 'units', // Đơn vị đo
+  isSaving = false,          // Khoá nút khi đang lưu (nếu parent truyền)
 }) => {
-  
-  // 3. THÊM STATE NỘI BỘ:
-  // Dùng để lưu trữ giá trị nhập vào, ví dụ: { 'athur-123': '5', 'bethony-456': '6.2' }
+  // 3. STATE NỘI BỘ
   const [results, setResults] = useState({});
+  const [errors, setErrors] = useState({}); // { athleteId: 'message' | undefined }
 
-  // 4. HÀM XỬ LÝ KHI NGƯỜI DÙNG NHẬP LIỆU
+  // 4. XỬ LÝ NHẬP LIỆU + VALIDATE NGAY
   const handleResultChange = (athleteId, value) => {
-    // Cập nhật state 'results'
-    setResults(prevResults => ({
-      ...prevResults,
-      [athleteId]: value, // Cập nhật giá trị cho VĐV có ID tương ứng
-    }));
+    setResults((prev) => ({ ...prev, [athleteId]: value }));
+
+    const { ok, message } = validateByUnit(value, measurementUnit);
+    setErrors((prev) => ({ ...prev, [athleteId]: ok ? undefined : message }));
   };
 
-  // 5. HÀM XỬ LÝ KHI NHẤN NÚT "SAVE"
+  // 5. NÚT SAVE — DISABLE nếu còn lỗi hoặc ô trống
+  const hasAnyError = Object.values(errors).some((msg) => !!msg);
+  const hasAnyEmpty = athletes.some((a) => (results[a.id] ?? '').toString().trim() === '');
+
+  const canSave = !hasAnyError && !hasAnyEmpty && athletes.length > 0 && !isSaving;
+
+  // 6. SAVE
   const handleSaveClick = () => {
-    // 'results' hiện là: { 'id-1': '5', 'id-2': '6.2' }
+    // Double-check phía trước
+    if (!canSave) return;
 
-    // Chuyển đổi OBJECT thành ARRAY mà component Cha mong đợi
-    const resultsArray = Object.keys(results).map(athleteId => ({
-      athleteId: athleteId,    // Cha mong đợi key 'athleteId'
-      value: results[athleteId] // Cha mong đợi key 'value'
+    const resultsArray = athletes.map((a) => ({
+      athleteId: a.id,
+      value: results[a.id],
     }));
-    
-    // 'resultsArray' giờ là: [ { athleteId: 'id-1', value: '5' }, { athleteId: 'id-2', value: '6.2' } ]
 
-    // Gửi ARRAY đã chuyển đổi lên cho cha
-    if (onSave) {
-      onSave(resultsArray); // <-- Đã sửa: gửi đi mảng
-    }
+    if (onSave) onSave(resultsArray);
   };
 
-  // 6. THÊM useEffect ĐỂ DỌN DẸP STATE
-  // Khi popup đóng lại, xóa hết dữ liệu đã nhập
+  // 7. DỌN DẸP KHI ĐÓNG
   useEffect(() => {
     if (!open) {
       setResults({});
+      setErrors({});
     }
   }, [open]);
 
+  // Gợi ý placeholder theo unit
+  const placeholder =
+    isMinutesUnit(measurementUnit)
+      ? 'm | mm:ss | h:mm:ss (mm, ss ≤ 60)'
+      : 'Enter number';
 
   return (
     <Dialog
       open={open}
       onClose={handleClose}
       PaperProps={{
-        // ... (style PaperProps của bạn giữ nguyên)
         style: {
           padding: '16px',
           borderRadius: '8px',
@@ -101,88 +169,72 @@ const RecordPopup = ({
     >
       <DialogTitle
         sx={{
-          // ... (style DialogTitle của bạn giữ nguyên)
           padding: '0 0 16px 0',
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
         }}
       >
-        <Typography
-          variant="h6"
-          sx={{ fontWeight: 'bold', color: '#000' }}
-        >
+        <Typography variant="h6" sx={{ fontWeight: 'bold', color: '#000' }}>
           Set Record Result
         </Typography>
-        <IconButton
-          aria-label="close"
-          onClick={handleClose}
-          sx={{ color: '#757575' }}
-        >
+        <IconButton aria-label="close" onClick={handleClose} sx={{ color: '#757575' }}>
           <CloseIcon />
         </IconButton>
       </DialogTitle>
 
-      <DialogContent sx={{ padding: '0', overflowY: 'unset' }}>
-
-        {/* 7. THAY ĐỔI LỚN: DÙNG .MAP() ĐỂ TẠO TRƯỜNG NHẬP LIỆU ĐỘNG */}
-        {/* Xóa bỏ 3 <Box> tĩnh của "athur", "bethony", "cecile" */}
-        {/* và thay bằng code lặp này: */}
-        {athletes.map((athlete) => (
-          <Box key={athlete.id} sx={{ marginBottom: '20px' }}>
-            <Typography
-              sx={{
-                marginBottom: '8px',
-                fontWeight: 'bold',
-                color: '#757575',
-              }}
-            >
-              {athlete.name} {/* Hiển thị tên VĐV (từ prop) */}
-            </Typography>
-            <Box sx={{ display: 'flex', alignItems: 'center' }}>
-              <CustomTextField
-                fullWidth
-                placeholder="Enter measurement"
-                variant="outlined"
-                size="small"
-                // Kết nối TextField với state nội bộ
-                value={results[athlete.id] || ''} // Lấy giá trị từ state
-                onChange={(e) => handleResultChange(athlete.id, e.target.value)} // Cập nhật state
-              />
-              <Typography
-                sx={{
-                  marginLeft: '8px',
-                  color: '#757575',
-                }}
-              >
-                {measurementUnit} {/* Hiển thị đơn vị (từ prop) */}
+      <DialogContent sx={{ padding: 0, overflowY: 'unset' }}>
+        {athletes.map((athlete) => {
+          const value = results[athlete.id] ?? '';
+          const errMsg = errors[athlete.id];
+          return (
+            <Box key={athlete.id} sx={{ marginBottom: '20px' }}>
+              <Typography sx={{ marginBottom: '8px', fontWeight: 'bold', color: '#757575' }}>
+                {athlete.name}
               </Typography>
+              <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                <CustomTextField
+                  fullWidth
+                  placeholder={placeholder}
+                  variant="outlined"
+                  size="small"
+                  value={value}
+                  onChange={(e) => handleResultChange(athlete.id, e.target.value)}
+                  error={!!errMsg}
+                  helperText={errMsg || ' '}
+                  inputProps={{
+                    // Một chút hạn chế nhẹ nhàng giúp người dùng đỡ nhập ký tự lạ
+                    inputMode: isMinutesUnit(measurementUnit) ? 'text' : 'decimal',
+                    pattern: isMinutesUnit(measurementUnit)
+                      ? undefined // cho phép ":" trong minutes mode
+                      : '[0-9]*[.,]?[0-9]*',
+                  }}
+                />
+                <Typography sx={{ marginLeft: '8px', color: '#757575' }}>
+                  {measurementUnit}
+                </Typography>
+              </Box>
             </Box>
-          </Box>
-        ))}
-        {/* Kết thúc vòng lặp .map() */}
+          );
+        })}
 
-
-        {/* 8. CẬP NHẬT NÚT SAVE RESULT */}
         <Button
           fullWidth
           variant="contained"
           sx={{
-            // ... (style nút của bạn giữ nguyên)
-            backgroundColor: '#1e6341',
+            backgroundColor: canSave ? '#1e6341' : '#9fb3a9',
             color: '#fff',
             padding: '12px',
             textTransform: 'none',
             fontWeight: 'bold',
             '&:hover': {
-              backgroundColor: '#257951',
+              backgroundColor: canSave ? '#257951' : '#9fb3a9',
             },
           }}
-          // THAY ĐỔI: onClick sẽ gọi hàm handleSaveClick
-          // Hàm này sẽ gửi dữ liệu lên component cha
-          onClick={handleSaveClick} 
+          onClick={handleSaveClick}
+          disabled={!canSave}
         >
-          Save Result
+          {isSaving ? 'Saving…' : 'Save Result'}
         </Button>
       </DialogContent>
     </Dialog>

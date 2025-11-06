@@ -12,39 +12,38 @@ import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'rec
 
 const primaryGreen = '#257951'; 
 
-// --- 2. SỬA LỖI LOGIC: Hàm formatResult ---
-const formatResult = (value, unit) => {
-  if (value === null || value === undefined) return "N/A";
+// ---- Helpers cho minutes
+const isMinutesUnit = (unit) =>
+  !!unit && ['minute', 'minutes', 'min', 'mins'].includes(String(unit).toLowerCase().trim());
 
-  const numericValue = parseFloat(value);
-  if (isNaN(numericValue)) return "N/A";
-
-  // Xử lý giá trị âm (cho Total Change)
-  const isNegative = numericValue < 0;
-  const absValue = Math.abs(numericValue);
-  let totalSeconds = 0;
-
-  // SỬA LOGIC: Kiểm tra 'unit'
-  if (unit === 'minutes') {
-    // Nếu unit là "minutes", giá trị "22" nghĩa là 22 phút
-    totalSeconds = Math.round(absValue * 60);
-  } else {
-    // Mặc định (hoặc unit là 'seconds'), giá trị (ví dụ: "3294") là giây
-    totalSeconds = Math.round(absValue);
-  }
-
-  const minutes = Math.floor(totalSeconds / 60);
-  const seconds = totalSeconds % 60;
-  
-  const formattedTime = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
-  
-  // Trả về, thêm dấu trừ nếu cần
-  return isNegative ? `-${formattedTime}` : formattedTime;
+// Format giây -> "mm:ss", có hỗ trợ giá trị âm (cho Total Change)
+const formatSecondsToMMSS = (totalSeconds) => {
+  if (!Number.isFinite(totalSeconds)) return 'N/A';
+  const isNegative = totalSeconds < 0;
+  const abs = Math.abs(Math.round(totalSeconds));
+  const m = Math.floor(abs / 60);
+  const s = abs % 60;
+  const str = `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+  return isNegative ? `-${str}` : str;
 };
-// --- Kết thúc sửa lỗi ---
 
+// --- Format kết quả để hiển thị theo unit (đÃ CHỈNH LOGIC CHUẨN HÓA) ---
+// Quy ước: nếu unit là minutes -> value đang là GIÂY (theo DB), hiển thị "mm:ss"
+//         unit khác -> hiển thị số (giữ nguyên), dùng cho chart axis/tooltip
+const formatResult = (value, unit) => {
+  if (value === null || value === undefined) return 'N/A';
+  const numericValue = Number(value);
+  if (!Number.isFinite(numericValue)) return 'N/A';
 
-// Component phụ trợ cho Thẻ Kết quả (Giữ nguyên)
+  if (isMinutesUnit(unit)) {
+    // VALUE ĐANG LÀ GIÂY -> hiển thị mm:ss
+    return formatSecondsToMMSS(numericValue);
+  }
+  // Default: hiển thị số (có thể là giây thuần hoặc đơn vị khác)
+  return String(numericValue);
+};
+
+// Component phụ trợ cho Thẻ Kết quả
 const ResultCard = ({ title, value, unit, icon: Icon, color }) => (
   <Box 
     sx={{ 
@@ -79,8 +78,7 @@ const ResultCard = ({ title, value, unit, icon: Icon, color }) => (
 
 // Component chính (NHẬN PROPS 'data')
 const ProgressChart = ({ data }) => {
-  
-  // 4. XỬ LÝ LOGIC: Nếu không có dữ liệu
+  // Nếu không có dữ liệu
   if (!data || !data.summary || !data.history || data.history.length === 0) {
     return (
       <Box sx={{ p: 3, textAlign: 'center', width: '100%' }}>
@@ -91,50 +89,44 @@ const ProgressChart = ({ data }) => {
     );
   }
 
-  // 5. BIẾN ĐỔI DỮ LIỆU TỪ PROPS (Logic)
   const { summary, history } = data;
   const unit = summary.unit || 'units';
+  const minutesMode = isMinutesUnit(unit);
 
-  // Định dạng dữ liệu cho thẻ
+  // Thẻ tóm tắt
   const latestResultFormatted = formatResult(summary.latestResult, unit);
   const totalChangeFormatted = formatResult(summary.totalChange, unit);
 
-  // Định dạng dữ liệu cho biểu đồ (history MỚI -> CŨ)
-  // Recharts cần CŨ -> MỚI, nên chúng ta đảo ngược (reverse)
+  // Dữ liệu cho biểu đồ: Recharts cần CŨ -> MỚI
   const chartData = [...history].reverse().map((item) => ({
-    value: item.result, // Giá trị thô (ví dụ: "22" hoặc "11")
+    value: Number(item.result), // GIỮ GIÁ TRỊ THÔ (giây nếu minutes)
     label: new Date(item.date).toLocaleDateString('en-US', {
       month: '2-digit',
       day: '2-digit'
     }),
   }));
-  
-  // Định dạng dữ liệu cho 'Recent Tests' (history đã MỚI -> CŨ)
+
+  // Recent Tests (đã MỚI -> CŨ sẵn trong `history`)
   const recentTests = history.slice(0, 5).map(item => ({
     date: new Date(item.date).toLocaleDateString('en-US', { 
       year: 'numeric', 
       month: '2-digit', 
       day: '2-digit' 
     }),
-    result: formatResult(item.result, unit), // Dùng hàm đã sửa
-    unit: unit,
+    result: formatResult(item.result, unit), // mm:ss nếu minutes
+    unit: unit, // GIỮ nguyên chữ "minutes"
   }));
 
-  // Hàm hiển thị nhãn trục X (Giữ nguyên)
-  const renderXAxisTick = ({ x, y, payload }) => { /* ... */ };
+  // (optional) Custom tick nếu bạn muốn, ở đây để trống vì không dùng
+  const renderXAxisTick = () => null;
 
   return (
-    // SỬA LAYOUT: Xóa padding, margin, maxWidth
-    <Box 
-      sx={{ 
-        width: '100%', // Lấp đầy 100% Box 900px của cha
-      }}
-    >
-      {/* 1. TIÊU ĐỀ CHÍNH (Giữ nguyên) */}
+    <Box sx={{ width: '100%' }}>
+      {/* Tiêu đề */}
       <Typography 
         variant="h6" 
         sx={{ 
-          marginBottom: 2, 
+          mb: 2, 
           color: '#1e1e1e', 
           fontWeight: 'bold',
           textAlign: 'left',
@@ -143,7 +135,7 @@ const ProgressChart = ({ data }) => {
         Progress Chart
       </Typography>
       
-      {/* 2. KHU VỰC BIỂU ĐỒ (Dùng dữ liệu 'chartData') */}
+      {/* Khu vực biểu đồ */}
       <Box 
         sx={{ 
           height: 300, 
@@ -160,40 +152,42 @@ const ProgressChart = ({ data }) => {
           >
             <XAxis
               dataKey="label"
-              /* ... */
+              tickLine={false}
+              axisLine={false}
+              tick={{ fontSize: 12, fill: '#666' }}
+              interval="preserveStartEnd"
             />
             <YAxis
-              domain={['dataMin - 1', 'dataMax + 1']} // Tự động co giãn
               tickLine={false}
               axisLine={false}
               tick={{ fontSize: 12, fill: '#666' }}
               padding={{ top: 5, bottom: 5 }}
-              tickFormatter={(value) => Math.round(value)} 
+              // Nếu minutes -> hiển thị mm:ss trên trục Y; ngược lại hiển thị số
+              tickFormatter={(v) => (minutesMode ? formatSecondsToMMSS(Number(v)) : Math.round(Number(v)))}
+              domain={['dataMin - 1', 'dataMax + 1']}
             />
             <Tooltip 
-              // Thêm Tooltip để hiển thị đúng
-              formatter={(value, name, props) => {
-                return [formatResult(value, unit), "Result"];
-              }}
+              formatter={(value) => [formatResult(value, unit), 'Result']}
             />
             <Line
               type="monotone"
-              dataKey="value" // Dùng giá trị thô
+              dataKey="value"
               stroke={primaryGreen}
               strokeWidth={3}
-              /* ... */
+              dot={false}
+              activeDot={{ r: 4 }}
             />
           </LineChart>
         </ResponsiveContainer>
       </Box>
 
-      {/* 3. THẺ KẾT QUẢ (Dùng dữ liệu đã xử lý) */}
+      {/* Thẻ kết quả */}
       <Grid container spacing={2} sx={{ mb: 4 }}>
         <Grid item xs={12} sm={6}>
           <ResultCard 
             title="Latest Result" 
-            value={latestResultFormatted} // Sẽ hiển thị: 22:00
-            unit={unit} 
+            value={latestResultFormatted}   // ví dụ: 22:00
+            unit={unit}                     // giữ chữ "minutes"
             icon={ArrowOutwardIcon} 
             color={primaryGreen}
           />
@@ -201,7 +195,7 @@ const ProgressChart = ({ data }) => {
         <Grid item xs={12} sm={6}>
           <ResultCard 
             title="Total Change" 
-            value={totalChangeFormatted} // Sẽ hiển thị: -07:00
+            value={totalChangeFormatted}    // ví dụ: -07:00
             unit={unit} 
             icon={FiberManualRecordIcon} 
             color={primaryGreen}
@@ -209,11 +203,11 @@ const ProgressChart = ({ data }) => {
         </Grid>
       </Grid>
       
-      {/* 4. CÁC BÀI KIỂM TRA GẦN ĐÂY (Dùng dữ liệu 'recentTests') */}
+      {/* Recent Tests */}
       <Typography 
         variant="body1" 
         sx={{ 
-          marginBottom: 2, 
+          mb: 2, 
           color: '#1e1e1e', 
           fontWeight: 'bold',
           textAlign: 'left',
@@ -233,10 +227,10 @@ const ProgressChart = ({ data }) => {
               </Grid>
               <Grid item xs={6} sx={{ textAlign: 'right' }}>
                 <Typography variant="body1" component="span" sx={{ fontWeight: 'bold', color: '#1e1e1e', mr: 0.5 }}>
-                  {test.result} {/* Sẽ hiển thị: 22:00, 11:00, ... */}
+                  {test.result} {/* mm:ss nếu minutes */}
                 </Typography>
                 <Typography variant="body2" component="span" sx={{ color: '#56616f' }}>
-                  {test.unit}
+                  {test.unit}   {/* giữ chữ "minutes" */}
                 </Typography>
               </Grid>
             </Grid>

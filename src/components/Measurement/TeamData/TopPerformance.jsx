@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'; // 1. THÊM HOOKS
+import React, { useState, useEffect } from 'react';
 import {
   Box,
   Typography,
@@ -6,79 +6,89 @@ import {
   ListItem,
   ListItemText,
   Divider,
-  CircularProgress, // 2. THÊM LOADING
+  CircularProgress,
 } from '@mui/material';
 import { styled } from '@mui/material/styles';
-import { useSelector } from 'react-redux'; // 3. THÊM REDUX
-import Measurement from '../../../api/modules/measurement.api'; // 4. THÊM API
-// ... (Các hằng số màu sắc và component styled giữ nguyên) ...
-const HEADER_BG_COLOR = '#e9f1ed'; 
-const TEXT_COLOR_PRIMARY = '#1e1e1e'; 
-const TEXT_COLOR_SECONDARY = '#757575'; 
-const DIVIDER_COLOR = '#e0e0e0'; 
+import { useSelector } from 'react-redux';
+import Measurement from '../../../api/modules/measurement.api';
 
-// 5. XÓA BỎ DỮ LIỆU MẪU (performanceData)
+const HEADER_BG_COLOR = '#e9f1ed';
+const TEXT_COLOR_PRIMARY = '#1e1e1e';
+const TEXT_COLOR_SECONDARY = '#757575';
+const DIVIDER_COLOR = '#e0e0e0';
 
 const CategoryHeader = styled(Box)(({ theme }) => ({
-  // ... (style giữ nguyên)
   backgroundColor: HEADER_BG_COLOR,
-  padding: theme.spacing(1.5, 2), 
+  padding: theme.spacing(1.5, 2),
   borderBottom: `1px solid ${DIVIDER_COLOR}`,
 }));
 
-// Component chính
-const TopPerformance = () => { // 6. XÓA PROP 'data'
+// ---- Helpers cho minutes
+const isMinutesUnit = (unit) =>
+  !!unit && ['minute', 'minutes', 'min', 'mins'].includes(unit.toLowerCase().trim());
 
-  // 7. THÊM STATE ĐỂ LẤY DỮ LIỆU
+const formatSecondsToMMSS = (totalSeconds) => {
+  if (!Number.isFinite(totalSeconds) || totalSeconds < 0) return '—';
+  const m = Math.floor(totalSeconds / 60);
+  const s = Math.floor(totalSeconds % 60);
+  return `${m}:${s.toString().padStart(2, '0')}`;
+};
+
+const TopPerformance = () => {
   const [leaderboardData, setLeaderboardData] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
-  const coachId = useSelector((state) => state.auth.user_id); // Lấy coachId
+  const coachId = useSelector((state) => state.auth.user_id);
 
-  // 8. THÊM useEffect ĐỂ GỌI API
   useEffect(() => {
     if (!coachId) {
       setIsLoading(false);
-      return; // Không làm gì nếu không có coachId
+      return;
     }
 
     const fetchLeaderboard = async () => {
       setIsLoading(true);
       try {
-        // Gọi API
         const apiData = await Measurement.getTeamLeaderboard(coachId);
-        
-        // 9. BIẾN ĐỔI DỮ LIỆU API
-        const transformedData = apiData.map(group => ({
-          // API 'measurement_name' -> Component 'category'
-          category: group.measurement_name,
-          
-          // API 'rankings' -> Component 'records'
-          records: group.rankings.map(record => ({
-            rank: record.rank,
-            // API 'first_name', 'last_name' -> Component 'name'
-            name: `${record.first_name} ${record.last_name}`,
-            // API 'result' -> Component 'time'
-            time: record.result,
-            // API 'unit' (từ group) -> Component 'unit' (trong record)
-            unit: group.unit,
-          }))
-        }));
-        
-        setLeaderboardData(transformedData);
 
-      } catch (error) {
-        console.error("Lỗi khi tải bảng xếp hạng:", error);
-        setLeaderboardData([]); // Đặt về mảng rỗng nếu lỗi
+        const transformed = apiData.map((group) => {
+          const unit = group.unit;
+          const minutesMode = isMinutesUnit(unit);
+
+          return {
+            category: group.measurement_name,
+            records: group.rankings.map((record) => {
+              const raw = record.result;
+
+              // Nếu đơn vị là minutes → hiển thị dạng mm:ss
+              const displayTime = minutesMode
+                ? formatSecondsToMMSS(Number(raw))
+                : raw;
+
+              const displayUnit = minutesMode ? 'minutes' : unit;
+
+              return {
+                rank: record.rank,
+                name: `${record.first_name} ${record.last_name}`,
+                time: displayTime,
+                unit: displayUnit,
+                rawValue: raw,
+              };
+            }),
+          };
+        });
+
+        setLeaderboardData(transformed);
+      } catch (err) {
+        console.error('Lỗi khi tải bảng xếp hạng:', err);
+        setLeaderboardData([]);
       } finally {
         setIsLoading(false);
       }
     };
 
     fetchLeaderboard();
-  }, [coachId]); // Gọi lại khi coachId thay đổi
+  }, [coachId]);
 
-
-  // 10. THÊM TRẠNG THÁI LOADING
   if (isLoading) {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', p: 4 }}>
@@ -87,7 +97,6 @@ const TopPerformance = () => { // 6. XÓA PROP 'data'
     );
   }
 
-  // 11. THÊM TRẠNG THÁI KHÔNG CÓ DỮ LIỆU
   if (leaderboardData.length === 0) {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', p: 4 }}>
@@ -96,26 +105,16 @@ const TopPerformance = () => { // 6. XÓA PROP 'data'
     );
   }
 
-  // 12. CẬP NHẬT RENDER (chỉ đổi tên biến 'data' -> 'leaderboardData')
   return (
-    <Box
-      sx={{
-        width: '100%',
-        maxWidth: 900, 
-        margin: '0 auto',
-        overflow: 'hidden',
-      }}
-    >
-      {leaderboardData.map((categoryGroup, index) => ( // Đổi tên biến
+    <Box sx={{ width: '100%', maxWidth: 900, margin: '0 auto', overflow: 'hidden' }}>
+      {leaderboardData.map((categoryGroup, index) => (
         <React.Fragment key={categoryGroup.category}>
-          {/* Header */}
           <CategoryHeader>
             <Typography
               variant="subtitle1"
               sx={{
                 fontWeight: 'bold',
                 color: TEXT_COLOR_PRIMARY,
-                textTransform: 'none',
                 textAlign: 'left',
               }}
             >
@@ -123,25 +122,19 @@ const TopPerformance = () => { // 6. XÓA PROP 'data'
             </Typography>
           </CategoryHeader>
 
-          {/* Danh sách các kỷ lục */}
           <List disablePadding>
             {categoryGroup.records.map((record, recordIndex) => (
-              // Logic render bên trong này giữ nguyên vì dữ liệu đã được biến đổi
               <React.Fragment key={recordIndex}>
-                <ListItem
-                  sx={{
-                    padding: (theme) => theme.spacing(1, 2), 
-                  }}
-                >
-                  {/* Cột 1: Rank và Tên */}
+                <ListItem sx={{ padding: (theme) => theme.spacing(1, 2) }}>
+                  {/* Rank + Tên */}
                   <ListItemText
                     primary={
                       <Box sx={{ display: 'flex', alignItems: 'center' }}>
                         <Typography
                           component="span"
                           sx={{
-                            width: '20px', 
-                            marginRight: 2,
+                            width: '20px',
+                            mr: 2,
                             fontWeight: 'bold',
                             color: TEXT_COLOR_PRIMARY,
                           }}
@@ -163,14 +156,14 @@ const TopPerformance = () => { // 6. XÓA PROP 'data'
                     }
                   />
 
-                  {/* Cột 2: Thời gian và Đơn vị */}
+                  {/* Thời gian + đơn vị */}
                   <Typography
                     variant="body1"
                     sx={{
                       display: 'flex',
                       alignItems: 'center',
                       whiteSpace: 'nowrap',
-                      minWidth: '100px', 
+                      minWidth: '100px',
                     }}
                   >
                     <Typography
@@ -178,7 +171,7 @@ const TopPerformance = () => { // 6. XÓA PROP 'data'
                       sx={{
                         fontWeight: 'bold',
                         color: TEXT_COLOR_PRIMARY,
-                        marginRight: 1,
+                        mr: 1,
                       }}
                     >
                       {record.time}
@@ -187,7 +180,7 @@ const TopPerformance = () => { // 6. XÓA PROP 'data'
                       component="span"
                       sx={{
                         color: TEXT_COLOR_SECONDARY,
-                        fontSize: '0.875rem', 
+                        fontSize: '0.875rem',
                       }}
                     >
                       {record.unit}
@@ -195,7 +188,6 @@ const TopPerformance = () => { // 6. XÓA PROP 'data'
                   </Typography>
                 </ListItem>
 
-                {/* Divider (Nếu không phải là mục cuối cùng trong nhóm) */}
                 {recordIndex < categoryGroup.records.length - 1 && (
                   <Divider component="li" sx={{ margin: '0 16px' }} />
                 )}
@@ -203,8 +195,7 @@ const TopPerformance = () => { // 6. XÓA PROP 'data'
             ))}
           </List>
 
-          {/* Divider lớn giữa các Category (Nếu không phải là nhóm cuối cùng) */}
-          {index < leaderboardData.length - 1 && ( // Đổi tên biến
+          {index < leaderboardData.length - 1 && (
             <Divider sx={{ borderBottomWidth: 5, borderColor: '#f7f7f7' }} />
           )}
         </React.Fragment>
