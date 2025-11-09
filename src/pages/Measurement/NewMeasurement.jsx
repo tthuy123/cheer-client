@@ -277,10 +277,10 @@ export default function NewMeasurement() {
             <Card variant="outlined" sx={{ borderRadius: 2 }}>
               <CardContent>
                 <Typography variant="h6" sx={{ mb: 1, fontWeight: 600 }}>
-                  Chọn một bài đo để xem hướng dẫn
+                  Select a measurement to view instructions.
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
-                  Hướng dẫn video và quy trình thực hiện sẽ hiển thị ngay khi bạn chọn Measurement.
+                  The video tutorial and procedure will appear once you select a Measurement.
                 </Typography>
               </CardContent>
             </Card>
