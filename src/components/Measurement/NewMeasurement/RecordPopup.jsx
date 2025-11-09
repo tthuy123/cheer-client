@@ -70,8 +70,8 @@ function validateByUnit(input, unit) {
       if (![m, s].every(Number.isFinite)) {
         return { ok: false, message: 'Định dạng không hợp lệ. Dùng mm:ss (vd: 12:30).' };
       }
-      if (m < 0 || m > 60) return { ok: false, message: 'Phần phút (mm) phải 0–60.' };
-      if (s < 0 || s > 60) return { ok: false, message: 'Phần giây (ss) phải 0–60.' };
+      if (m < 0 || m >= 60) return { ok: false, message: 'Phần phút (mm) phải 0–59.' };
+      if (s < 0 || s >= 60) return { ok: false, message: 'Phần giây (ss) phải 0–59.' };
       return { ok: true, message: null };
     }
 
@@ -84,8 +84,8 @@ function validateByUnit(input, unit) {
         return { ok: false, message: 'Định dạng không hợp lệ. Dùng h:mm:ss (vd: 1:05:30).' };
       }
       if (h < 0) return { ok: false, message: 'Giờ (h) không được âm.' };
-      if (m < 0 || m > 60) return { ok: false, message: 'Phần phút (mm) phải 0–60.' };
-      if (s < 0 || s > 60) return { ok: false, message: 'Phần giây (ss) phải 0–60.' };
+      if (m < 0 || m >= 60) return { ok: false, message: 'Phần phút (mm) phải 0–59.' };
+      if (s < 0 || s >= 60) return { ok: false, message: 'Phần giây (ss) phải 0–59.' };
       return { ok: true, message: null };
     }
 
@@ -150,7 +150,7 @@ const RecordPopup = ({
   // Gợi ý placeholder theo unit
   const placeholder =
     isMinutesUnit(measurementUnit)
-      ? 'm | mm:ss | h:mm:ss (mm, ss ≤ 60)'
+      ? 'm | mm:ss | h:mm:ss (mm, ss < 60)'
       : 'Enter number';
 
   return (
