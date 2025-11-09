@@ -1,10 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Box, Button, CircularProgress } from "@mui/material";
+import { Box, Button, CircularProgress, Card, CardContent, Typography } from "@mui/material";
 
-// 1. IMPORT API
-import Measurement from '../../api/modules/measurement.api.js'; 
+import Measurement from '../../api/modules/measurement.api.js';
 
-// 2. IMPORT CÁC COMPONENT CON
 import SelectMeasurement from "../../components/Measurement/TeamData/SelectMeasurement";
 import VideoInstruction from "../../components/Measurement/NewMeasurement/VideoInstruction";
 import MeasurementLayout from "../../components/layouts/MeasurementLayout";
@@ -13,15 +11,7 @@ import RecordPopup from '../../components/Measurement/NewMeasurement/RecordPopup
 
 import { useSelector } from 'react-redux';
 
-/**
- * Parse "mm:ss" | "h:mm:ss" | "m" -> total seconds
- * RÀNG BUỘC:
- *  - Luôn yêu cầu 0 <= mm <= 60
- *  - 0 <= ss <= 60
- *  - Nếu có giờ (h>0) thì mm vẫn bị ràng buộc <= 60 (theo yêu cầu "mm và ss không > 60")
- *  - Nếu chỉ nhập "m" (số phút), cũng chặn m > 60
- * Trả về NaN nếu không hợp lệ
- */
+/* ---------------------- Time Parser: mm | mm:ss | h:mm:ss ---------------------- */
 function parseDurationToSeconds(input) {
   if (typeof input !== 'string') return NaN;
   const raw = input.trim();
@@ -35,81 +25,121 @@ function parseDurationToSeconds(input) {
 
   let h = 0, m = 0, s = 0;
   if (parts.length === 1) {
-    // chỉ phút
     m = nums[0];
-    if (m < 0 || m > 60) return NaN;        // CHẶN phút > 60
+    if (m < 0 || m > 60) return NaN;
   } else if (parts.length === 2) {
-    // mm:ss
     [m, s] = nums;
-    if (m < 0 || m > 60) return NaN;        // CHẶN mm > 60
-    if (s < 0 || s > 60) return NaN;        // CHẶN ss > 60
+    if (m < 0 || m > 60) return NaN;
+    if (s < 0 || s > 60) return NaN;
   } else if (parts.length === 3) {
-    // h:mm:ss
     [h, m, s] = nums;
     if (h < 0) return NaN;
-    if (m < 0 || m > 60) return NaN;        // CHẶN mm > 60 ngay cả khi có giờ
-    if (s < 0 || s > 60) return NaN;        // CHẶN ss > 60
+    if (m < 0 || m > 60) return NaN;
+    if (s < 0 || s > 60) return NaN;
   }
 
   return h * 3600 + m * 60 + s;
 }
 
+/* ---------------------- Instruction Parser từ API ---------------------- */
+/** 
+ * Tách chuỗi instruction của API thành:
+ * - description: phần trước "How to Perform:"
+ * - steps: danh sách 1., 2., 3. ... (cắt trước các section Equipment/Safety/Supervision)
+ */
+function parseInstruction(instructionRaw = "") {
+  const txt = String(instructionRaw).trim();
+
+  // Cắt theo "How to Perform:"
+  const split = txt.split(/^\s*How to Perform\s*:\s*/im);
+  const description = split[0]?.trim() || "";
+
+  let stepsBlock = split[1] || "";
+
+  // Cắt phần sau steps nếu gặp các heading khác
+  stepsBlock = stepsBlock.split(/^\s*(Equipment Required|Safety Considerations|Supervision Requirement)\s*:/im)[0] || stepsBlock;
+
+  // Lấy dòng dạng "1. ...."
+  const stepMatches = [...stepsBlock.matchAll(/^\s*\d+\.\s*(.+?)\s*$/gim)].map(m => m[1].trim());
+
+  let steps = stepMatches;
+  if (steps.length === 0 && stepsBlock) {
+    steps = stepsBlock
+      .split(/\n+/)
+      .map(s => s.replace(/^[\-\*\u2022]\s*/, '').trim())
+      .filter(Boolean);
+  }
+
+  return { description, steps };
+}
+
+/* Build dữ liệu hiển thị cho VideoInstruction từ selectedMeasurement (API fields) */
+function buildInstructionFromMeasurementAPI(selectedMeasurement) {
+  if (!selectedMeasurement) return null;
+
+  const { instruction, video_link, thumbnail_link, name } = selectedMeasurement;
+  const { description, steps } = parseInstruction(instruction || "");
+
+  return {
+    videoUrl: video_link || "",
+    posterUrl: thumbnail_link || "",
+    description: description || `This test measures performance in "${name || 'the selected measurement'}".`,
+    steps: steps && steps.length ? steps : [
+      "Prepare equipment and testing area.",
+      "Explain and demo correct technique and scoring rules.",
+      "Warm up adequately before the test.",
+      "Perform the test per standard protocol.",
+      "Record results immediately and double-check entries."
+    ],
+  };
+}
+
 export default function NewMeasurement() {
   const coachId = useSelector((state) => state.auth.user_id);
-  console.log("Coach ID từ Redux:", coachId);
 
-  // 4. STATE QUẢN LÝ DỮ LIỆU TỪ API
-  const [measurementsList, setMeasurementsList] = useState([]); // Danh sách các bài đo
-  const [athletesList, setAthletesList] = useState([]);         // Danh sách VĐV của coach
+  // STATE dữ liệu API
+  const [measurementsList, setMeasurementsList] = useState([]);
+  const [athletesList, setAthletesList] = useState([]);
 
-  // 5. STATE QUẢN LÝ LỰA CHỌN CỦA NGƯỜI DÙNG
-  const [selectedMeasurement, setSelectedMeasurement] = useState(null); // Lưu trữ TOÀN BỘ object bài đo
-  const [selectedAthletes, setSelectedAthletes] = useState([]); 
+  // STATE lựa chọn user
+  const [selectedMeasurement, setSelectedMeasurement] = useState(null);
+  const [selectedAthletes, setSelectedAthletes] = useState([]);
 
-  // 6. STATE QUẢN LÝ UI (LOADING, POPUP)
-  const [isLoading, setIsLoading] = useState(true);   // Loading ban đầu
-  const [isSaving, setIsSaving] = useState(false);    // Đang lưu kết quả
+  // STATE UI
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
   const [isPopupOpen, setIsPopupOpen] = useState(false);
 
-  // 7. HOOK ĐỂ TẢI DỮ LIỆU BAN ĐẦU (DANH SÁCH VĐV VÀ BÀI ĐO)
+  /* ---------------------- Load initial data ---------------------- */
   useEffect(() => {
     const loadInitialData = async () => {
-      if (!coachId) return; // Đảm bảo có coachId
-
+      if (!coachId) return;
       setIsLoading(true);
       try {
-        // Gọi API song song
         const [measurementsData, athletesData] = await Promise.all([
           Measurement.listAllMeasurements(),
           Measurement.listAthletesOfCoach(coachId)
         ]);
-        console.log("Dữ liệu measurements:", measurementsData);
-        console.log("Dữ liệu athletes:", athletesData);
 
         const mappedAthletes = athletesData.map(ath => ({
-          id: ath.id, // Map 'user_id' -> 'id'
-          name: `${ath.first_name} ${ath.last_name}` // Kết hợp tên
+          id: ath.id, // hoặc ath.user_id tùy API
+          name: `${ath.first_name} ${ath.last_name}`,
         }));
 
         setMeasurementsList(measurementsData);
         setAthletesList(mappedAthletes);
-
       } catch (error) {
         console.error("Lỗi khi tải dữ liệu:", error);
-        // TODO: Hiển thị thông báo lỗi cho người dùng (ví dụ: Snackbar)
       } finally {
         setIsLoading(false);
       }
     };
-
     loadInitialData();
-  }, [coachId]); // Tải lại nếu coachId thay đổi
+  }, [coachId]);
 
-  // 8. LỌC DANH SÁCH VĐV ĐỂ TRUYỀN VÀO POPUP (sử dụng state 'athletesList')
-  const athletesToRecord = athletesList.filter(athlete => 
-    selectedAthletes.includes(athlete.id)
-  );
+  const athletesToRecord = athletesList.filter(a => selectedAthletes.includes(a.id));
 
+  /* ---------------------- Popup control ---------------------- */
   const handleOpenPopup = () => {
     if (!selectedMeasurement) {
       alert("Vui lòng chọn một bài đo (measurement).");
@@ -121,12 +151,9 @@ export default function NewMeasurement() {
     }
     setIsPopupOpen(true);
   };
+  const handleClosePopup = () => setIsPopupOpen(false);
 
-  const handleClosePopup = () => {
-    setIsPopupOpen(false);
-  };
-
-  // 10. CẬP NHẬT HÀM LƯU KẾT QUẢ (GỌI API)
+  /* ---------------------- Save results ---------------------- */
   const handleSaveResults = async (results) => {
     if (!selectedMeasurement) {
       console.error("Không thể lưu: không có bài đo nào được chọn.");
@@ -135,15 +162,9 @@ export default function NewMeasurement() {
 
     setIsSaving(true);
 
-    // chuẩn hoá unit (ví dụ: "minutes", "minute", "min")
-    const unit = (selectedMeasurement?.imperial_unit || '')
-      .toString()
-      .toLowerCase()
-      .trim();
-
+    const unit = (selectedMeasurement?.imperial_unit || '').toString().toLowerCase().trim();
     const isMinutes = ['minute', 'minutes', 'min', 'mins'].includes(unit);
 
-    // --- VALIDATION TRƯỚC KHI GỬI: CHẶN mm/ss > 60 ---
     const invalids = [];
     const payloads = [];
 
@@ -152,37 +173,24 @@ export default function NewMeasurement() {
 
       if (isMinutes) {
         if (typeof result.value === 'string') {
-          // trường hợp "mm:ss" hoặc "h:mm:ss" hoặc "m"
           const secs = parseDurationToSeconds(result.value);
           if (Number.isNaN(secs)) {
-            invalids.push({
-              athleteId: result.athleteId,
-              value: result.value
-            });
-            continue; // bỏ qua VĐV này
+            invalids.push({ athleteId: result.athleteId, value: result.value });
+            continue;
           }
-          numericValue = secs; // LƯU THEO GIÂY
+          numericValue = secs; // lưu theo giây
         } else {
-          // nếu người dùng nhập số phút (vd: 12.5)
           const minutes = parseFloat(result.value);
-          // CHẶN phút > 60 ngay cả khi không có ":"
           if (Number.isNaN(minutes) || minutes < 0 || minutes > 60) {
-            invalids.push({
-              athleteId: result.athleteId,
-              value: result.value
-            });
+            invalids.push({ athleteId: result.athleteId, value: result.value });
             continue;
           }
           numericValue = Math.round(minutes * 60);
         }
       } else {
-        // các unit khác: giữ nguyên số
         const num = parseFloat(result.value);
         if (Number.isNaN(num)) {
-          invalids.push({
-            athleteId: result.athleteId,
-            value: result.value
-          });
+          invalids.push({ athleteId: result.athleteId, value: result.value });
           continue;
         }
         numericValue = num;
@@ -195,7 +203,6 @@ export default function NewMeasurement() {
       });
     }
 
-    // Nếu có giá trị không hợp lệ -> báo lỗi & không gửi API
     if (invalids.length > 0) {
       const list = invalids.map(iv => `• Athlete ${iv.athleteId}: "${iv.value}"`).join('\n');
       alert(
@@ -206,7 +213,6 @@ export default function NewMeasurement() {
     }
 
     try {
-      // Gửi tất cả request song song
       await Promise.all(payloads.map(body => Measurement.setNewRecord(body)));
       alert("Lưu kết quả thành công!");
       handleClosePopup();
@@ -219,7 +225,7 @@ export default function NewMeasurement() {
     }
   };
 
-  // 11. HIỂN THỊ LOADING BAN ĐẦU
+  /* ---------------------- Loading UI ---------------------- */
   if (isLoading) {
     return (
       <MeasurementLayout>
@@ -230,7 +236,12 @@ export default function NewMeasurement() {
     );
   }
 
-  // 12. GIAO DIỆN CHÍNH
+  /* ---------------------- Build instruction VM ---------------------- */
+  const instructionVM = selectedMeasurement
+    ? buildInstructionFromMeasurementAPI(selectedMeasurement)
+    : null;
+
+  /* ---------------------- UI ---------------------- */
   return (
     <MeasurementLayout>
       <Box
@@ -244,7 +255,7 @@ export default function NewMeasurement() {
           p: 2,
         }}
       >
-        {/* TRUYỀN DỮ LIỆU VÀ HÀM VÀO CÁC COMPONENT CON */}
+        {/* Chọn bài đo */}
         <Box sx={{ width: '100%', maxWidth: 900 }}>
           <SelectMeasurement
             measurementsList={measurementsList}
@@ -253,9 +264,30 @@ export default function NewMeasurement() {
           />
         </Box>
 
-        {/* TODO: Bạn có thể muốn VideoInstruction thay đổi dựa trên 'selectedMeasurement' */}
-        <VideoInstruction /> 
-        
+        {/* VideoInstruction động */}
+        {selectedMeasurement ? (
+          <VideoInstruction
+            videoUrl={instructionVM.videoUrl}
+            posterUrl={instructionVM.posterUrl}
+            description={instructionVM.description}
+            steps={instructionVM.steps}
+          />
+        ) : (
+          <Box sx={{ width: '100%', maxWidth: 900 }}>
+            <Card variant="outlined" sx={{ borderRadius: 2 }}>
+              <CardContent>
+                <Typography variant="h6" sx={{ mb: 1, fontWeight: 600 }}>
+                  Chọn một bài đo để xem hướng dẫn
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Hướng dẫn video và quy trình thực hiện sẽ hiển thị ngay khi bạn chọn Measurement.
+                </Typography>
+              </CardContent>
+            </Card>
+          </Box>
+        )}
+
+        {/* Chọn vận động viên */}
         <Box sx={{ width: '100%', maxWidth: 900 }}>
           <AthleteSelector 
             athletesList={athletesList}
@@ -264,6 +296,7 @@ export default function NewMeasurement() {
           />
         </Box>
 
+        {/* Nút mở popup ghi kết quả */}
         <Button 
           variant="contained" 
           onClick={handleOpenPopup}
@@ -273,27 +306,25 @@ export default function NewMeasurement() {
             maxWidth: 900, 
             backgroundColor: "#257951", 
             color: "white", 
-            fontSize: "15px", 
+            fontSize: 15, 
             fontWeight: "bold", 
             textTransform: "none", 
             borderRadius: "10px", 
-            padding: "8px", 
-            marginTop: "10px" 
+            p: "8px", 
+            mt: "10px" 
           }}
         >
           {isSaving ? 'Đang lưu...' : 'Set Record Results'}
         </Button>
       </Box>
 
-      {/* POPUP */}
+      {/* Popup ghi kết quả */}
       <RecordPopup
         open={isPopupOpen}
         handleClose={handleClosePopup}
         onSave={handleSaveResults}
         athletes={athletesToRecord}
-        // Lấy đơn vị (unit) từ bài đo đã chọn
         measurementUnit={selectedMeasurement?.imperial_unit || 'N/A'}
-        // Vô hiệu hóa popup khi đang lưu
         isSaving={isSaving}
       />
     </MeasurementLayout>
