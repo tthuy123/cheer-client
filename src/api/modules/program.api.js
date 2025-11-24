@@ -1,4 +1,5 @@
 // src/api/modules/program.api.js
+import { Delete } from "@mui/icons-material";
 import Client from "../client.api.js";
 
 const Program = {
@@ -50,8 +51,20 @@ async GetProgramDetailsById(userId, programId, token) {
     { headers }
   );
   return res?.data ?? res;
-}
-
+},
+ async DeleteProgram(userId, programId, token) {
+    const headers = token ? { Authorization: `Bearer ${token}` } : {};
+    
+    // SỬA LỖI: Endpoint và cấu trúc gọi API xóa (DELETE)
+    const res = await Client.delete(
+      // Endpoint: /programs/users/{userId}/programs/{programId}
+      `/programs/users/${userId}/${programId}`,
+      { headers } // DELETE thường không có body, chỉ cần truyền headers
+    );
+    
+    console.log(`❌ Program ${programId} deleted:`, res);
+    return res?.data ?? res; // Trả về data hoặc toàn bộ response
+  }
 
 };
 
