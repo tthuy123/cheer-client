@@ -57,8 +57,13 @@ export default function NewCheckOffInput({
   skill,
   setSkill,
   notes,
-  setNotes
+  setNotes,
+  // MỚI: Nhận prop 'disableDateCheck' hoặc 'maxDate' (tôi dùng todayDate để đơn giản)
 }) {
+  
+  // Dùng todayDate (định dạng YYYY-MM-DD) làm giá trị max cho input date
+  const minDate = todayDate; 
+
   return (
     <> {/* Dùng Fragment để trả về nhiều FormGroup */}
       {/* === Today's Date === */}
@@ -81,10 +86,23 @@ export default function NewCheckOffInput({
           type="text"
           placeholder="Select due date"
           value={dueDate}
-          onChange={(e) => setDueDate(e.target.value)}
+          onChange={(e) => {
+            // Đảm bảo không cho phép chọn ngày tương lai qua onChange
+            if (e.target.value && e.target.value < minDate) {
+                // Tùy chọn: báo lỗi hoặc giữ nguyên giá trị cũ
+                // Hiện tại: Chỉ set nếu ngày hợp lệ (ngày <= maxDate)
+                setDueDate(minDate); // Set về ngày hôm nay nếu chọn ngày tương lai
+            } else {
+                setDueDate(e.target.value);
+            }
+          }}
           onFocus={(e) => (e.target.type = 'date')}
           onBlur={(e) => {
             if (!e.target.value) { e.target.type = 'text'; }
+          }}
+          // SỬA: Thêm thuộc tính max vào inputProps để vô hiệu hóa ngày tương lai
+          inputProps={{
+            min: minDate, // Vô hiệu hóa chọn ngày sau ngày hôm nay (YYYY-MM-DD)
           }}
         />
       </FormGroup>
