@@ -22,7 +22,6 @@ const TrainingProgramsPage = ({ filterType = "all", showCreate = false }) => {
   const debounceMs = 350;
   const navigate = useNavigate();
 
-  // helper lọc client (phòng khi server chưa hỗ trợ ?type=)
   const applyClientFilter = (items) => {
     if (filterType === "all") return items;
     return items.filter(
@@ -115,7 +114,30 @@ const TrainingProgramsPage = ({ filterType = "all", showCreate = false }) => {
       setError("Không mở được chương trình. Vui lòng thử lại.");
     }
   };
-
+const handleDeleteProgram = async (programId) => {
+  if (!window.confirm("Bạn có chắc chắn muốn xóa chương trình này? Hành động này không thể hoàn tác.")) {
+    return;
+  }
+  
+  setLoading(true);
+  try {
+    // Gọi API xóa
+    const res = await Program.DeleteProgram(userId, programId, token);
+    console.log('res xóa', res);
+    if (res) {
+      const updatedPrograms = allPrograms.filter(p => p.program_id !== programId);
+      setAllPrograms(updatedPrograms);
+      setVisiblePrograms(updatedPrograms);
+    } else {
+      setError(res?.error || "Không thể xóa chương trình.");
+    }
+  } catch (e) {
+    console.error("Delete program failed:", e);
+    setError("Lỗi kết nối khi xóa chương trình. Vui lòng thử lại.");
+  } finally {
+    setLoading(false);
+  }
+};
   return (
     <Box sx={{ px: 2, pb: 4 }}>
       {showCreate && <CreateCard />}
@@ -129,7 +151,7 @@ const TrainingProgramsPage = ({ filterType = "all", showCreate = false }) => {
       )}
 
       {!loading && !error && (
-        <ProgramList programs={visiblePrograms} onStart={handleStartProgram} />
+        <ProgramList programs={visiblePrograms} onStart={handleStartProgram} onDelete={handleDeleteProgram} />
       )}
     </Box>
   );
