@@ -17,7 +17,7 @@ const navItems = [
   { label: "Home",        icon: <AccountCircleOutlinedIcon />, to: "/home" },
   { label: "Training",    icon: <FitnessCenterIcon />,         to: "/training/strength" },
   { label: "Measurement", icon: <StraightenIcon />,            to: "/measurement/new" },
-  { label: "Hit/Miss",    icon: <TrackChangesIcon />,          to: "/hit-miss" },
+ // { label: "Hit/Miss",    icon: <TrackChangesIcon />,          to: "/hit-miss" },
   { label: "Check Off",   icon: <ChecklistIcon />,             to: "/check-off/new" },
 ];
 
@@ -41,13 +41,17 @@ export default function MenuBar() {
         bottom: 0,
         left: 0,
         right: 0,
-        zIndex: 1000,
+        zIndex: 1000
       }}
     >
       <BottomNavigation
         showLabels
         value={currentIndex}
         sx={{
+          "& .MuiBottomNavigationAction-root": {
+            mx: 0.5, 
+            maxWidth: 168, 
+          },
           "& .Mui-selected .MuiSvgIcon-root": {
             color: "green",
           },
