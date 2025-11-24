@@ -83,7 +83,7 @@ const ProgressChart = ({ data }) => {
     return (
       <Box sx={{ p: 3, textAlign: 'center', width: '100%' }}>
         <Typography color="textSecondary">
-          Chưa có dữ liệu cho lựa chọn này.
+          No measurement data available for this athlete.
         </Typography>
       </Box>
     );
