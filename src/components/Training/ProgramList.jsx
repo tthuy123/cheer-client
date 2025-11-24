@@ -5,7 +5,8 @@ import { Card, CardContent, Typography, Box, IconButton, Button } from "@mui/mat
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 import PlayArrowIcon from "@mui/icons-material/PlayArrow";
 
-const ProgramCard = ({ program, onStart }) => (
+// CẬP NHẬT: Thêm prop 'onDelete'
+const ProgramCard = ({ program, onStart, onDelete }) => (
   <Card
     sx={{
       maxWidth: 800,
@@ -43,7 +44,13 @@ const ProgramCard = ({ program, onStart }) => (
       </Box>
 
       <Box sx={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 1 }}>
-        <IconButton size="medium" sx={{ color: "#9ca3b1" }}>
+        <IconButton 
+          size="medium" 
+          sx={{ color: "#9ca3b1" }} 
+          // MỚI: Gắn hàm onDelete vào nút xóa
+          onClick={() => onDelete?.(program.program_id)} 
+          aria-label="delete program"
+        >
           {/* <ContentCopyIcon fontSize="small" /> */}
           <DeleteOutlineIcon fontSize="medium"  />
         </IconButton>
@@ -62,10 +69,16 @@ const ProgramCard = ({ program, onStart }) => (
   </Card>
 );
 
-const ProgramList = ({ programs = [], onStart }) => (
+// CẬP NHẬT: Thêm prop 'onDelete'
+const ProgramList = ({ programs = [], onStart, onDelete }) => (
   <>
     {programs.map((p) => (
-      <ProgramCard key={p.program_id} program={p} onStart={onStart} />
+      <ProgramCard 
+        key={p.program_id} 
+        program={p} 
+        onStart={onStart} 
+        onDelete={onDelete} // MỚI: Truyền hàm onDelete xuống ProgramCard
+      />
     ))}
   </>
 );

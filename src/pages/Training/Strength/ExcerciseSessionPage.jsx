@@ -97,7 +97,6 @@ export default function ExerciseSessionPage() {
         if (!mounted) return;
         setProgram(data);
 
-        // 1. Nếu bắt đầu chương trình mới (không có ID bài tập), xóa rác cũ
         const isStartingFresh = !programExerciseId;
         if (isStartingFresh) {
           clearWorkoutStorage(programId);
@@ -207,8 +206,14 @@ export default function ExerciseSessionPage() {
   const goToExercise = (peId) => navigate(`/programs/${programId}/exercises/${peId}`);
 
   const handlePrev = () => {
-    if (isFirst || !prevExercise) return;
+    if (isFirst) {
+    // Nếu là bài tập đầu tiên, điều hướng về trang chi tiết chương trình
+    navigate(`/training/strength`);
+    return;
+  }
+    if (prevExercise) {
     goToExercise(prevExercise.program_exercise_id);
+  }
   };
 
   const completeProgram = () => {
