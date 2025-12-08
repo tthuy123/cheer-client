@@ -79,6 +79,7 @@ export default function ReviewCard({ reviewData = defaultData }) {
   const handleStatusChange = (_e, newStatus) => {
     if (newStatus !== null) setStatus(newStatus);
   };
+  console.log('ReviewCard render with reviewData:', reviewData);
 
   const handleSave = async () => {
     if (!coachId) {
@@ -135,16 +136,28 @@ export default function ReviewCard({ reviewData = defaultData }) {
         fontFamily: 'Aptos, sans-serif',
       }}
     >
-      {/* 1. Video */}
+      {/* 1. Video
       <Box sx={{ position: 'relative', width: '100%', paddingTop: '56.25%', backgroundColor: '#000' }}>
         <video
           controls
           style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%' }}
-          src={reviewData.videoUrl}
+          // src={reviewData.videoUrl}
+          src='https://drive.google.com/uc?export=view&id=1WB8qP0kGIKyYt_tpZNv0nVs1zQ7Vod6a'
         >
           Trình duyệt của bạn không hỗ trợ thẻ video.
         </video>
-      </Box>
+      </Box> */}
+      <Box sx={{ position: 'relative', width: '100%', paddingTop: '56.25%', backgroundColor: '#000' }}>
+  <iframe
+    style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%' }}
+    src="https://drive.google.com/file/d/1WB8qP0kGIKyYt_tpZNv0nVs1zQ7Vod6a/preview"
+    frameBorder="0"
+    allow="autoplay; encrypted-media"
+    allowFullScreen
+    title="Embedded Google Drive Video"
+  >
+  </iframe>
+</Box>
 
       {/* 2. Info + nhập liệu */}
       <Box sx={{ p: 3, backgroundColor: '#ffffff' }}>
