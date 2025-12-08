@@ -14,17 +14,52 @@ const Exercise = {
       throw error;
     }
   },
-  async getAllExercises(page = 1, token) {
+  async getAllExercises(page = 1, token, { searchQuery = "" } = {}) {
     try {
-      const res = await Client.get("/exercises", {
-        params: { page },
-       // headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+      let endpoint = "/exercises";
+      let params = {};
+      
+      // Nếu có searchQuery, gọi endpoint tìm kiếm
+      if (searchQuery) {
+        endpoint = "/exercises/search";
+        params = { name: searchQuery }; 
+      } else {
+        // Nếu không có query, gọi endpoint phân trang thông thường
+        params = { page }; 
+      }
+
+      const res = await Client.get(endpoint, {
+        params: params,
       });
-      // Backend trả { items, page, pageSize, total, totalPages }
-      return res?.data ?? res;
+      
+      const responseData = res;
+      const fetchedItems = responseData?.items || responseData || [];
+      console.log(responseData);
+      console.log(fetchedItems);
+
+
+      // Nếu là kết quả Search (chỉ trả về items, không có phân trang)
+      if (endpoint.includes("/search")) {
+         return {
+            items: Array.isArray(fetchedItems) ? fetchedItems : [], // Đảm bảo luôn là mảng
+            page: 1,
+            pageSize: fetchedItems.length, // Đặt pageSize bằng tổng số lượng tìm thấy
+            total: fetchedItems.length,
+            totalPages: 1,
+         };
+      }
+      
+      // Nếu là kết quả List (có phân trang)
+      return {
+          items: Array.isArray(responseData?.items) ? responseData.items : [], // Đảm bảo items là mảng
+          page: responseData?.page ?? 1,
+          pageSize: responseData?.pageSize ?? 10,
+          total: responseData?.total ?? 0,
+          totalPages: responseData?.totalPages ?? 1,
+      };
+
     } catch (error) {
       console.error("Error fetching exercises:", error);
-      // Nên ném thông điệp gọn gàng
       throw new Error(
         error?.response?.data?.message || error?.message || "Failed to load exercises"
       );
@@ -42,7 +77,8 @@ const Exercise = {
             console.error(`Error fetching exercise with id ${id}:`, error);
             throw error;
         }
-    }
+    },
+
 };
 
 export default Exercise;

@@ -6,17 +6,20 @@ import ExerciseList from "./ExerciseList";
 import LoadMoreButton from "./LoadMoreButton";
 import { useSelector } from "react-redux";
 import Exercise from "../../../api/modules/exercise.api";
+import useDebounce from "../../../utils/useDebounce"; // <--- ĐẢM BẢO ĐƯỜNG DẪN ĐÚNG ---
 
 export default function ExercisePickerPage({ onChangeSelected }) {
   const token = useSelector((s) => s.auth.token);
 
-  // ====== STATE ======
+  // ====== STATE VÀ DEBOUNCE ======
   const [query, setQuery] = useState("");
+  const debouncedQuery = useDebounce(query, 500); // Trì hoãn 500ms cho việc tìm kiếm API
+
   const [added, setAdded] = useState([]);
   const [allExercises, setAllExercises] = useState([]);
 
   const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10); // backend mặc định 10
+  const [pageSize, setPageSize] = useState(10);
   const [total, setTotal] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
 
@@ -46,8 +49,11 @@ export default function ExercisePickerPage({ onChangeSelected }) {
           setErr(null);
         }
 
-        const data = await Exercise.getAllExercises(targetPage, token);
-        // data: { items, page, pageSize, total, totalPages }
+        // Gọi API, truyền debouncedQuery vào
+        const data = await Exercise.getAllExercises(targetPage, token, { 
+            searchQuery: debouncedQuery 
+        });
+        
         const items = normalize(data?.items);
 
         setPage(data?.page ?? targetPage);
@@ -63,34 +69,40 @@ export default function ExercisePickerPage({ onChangeSelected }) {
         setLoadingMore(false);
       }
     },
-    [token]
+    [token, debouncedQuery] // Thêm debouncedQuery vào dependencies
   );
 
-  // Lần đầu: load page 1
+  // Tải lại dữ liệu khi debouncedQuery thay đổi
   useEffect(() => {
+    // Reset state và tải lại trang 1
+    setAllExercises([]); 
+    setPage(1);         
     fetchPage(1, { append: false });
-  }, [fetchPage]);
+  }, [debouncedQuery, token, fetchPage]);
 
-  // ====== FILTERING (client-side trên những gì đã load) ======
+  // ====== FILTERING (client-side - chỉ để hiển thị tức thì và lọc theo tên) ======
   const addedIds = useMemo(() => new Set(added.map((e) => e.id)), [added]);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
+    
+    // Nếu không có truy vấn, hiển thị tất cả bài tập đã load từ server
     if (!q) return allExercises;
+    
+    // Tìm kiếm tức thì theo tên trên client (chỉ lọc theo tên như yêu cầu)
     return allExercises.filter(
-      (e) =>
-        e.name.toLowerCase().includes(q) ||
-        (e.description || "").toLowerCase().includes(q)
+      (e) => e.name.toLowerCase().includes(q)
     );
-  }, [query, allExercises]);
+  }, [query, allExercises]); // Sử dụng 'query' (state gốc) để lọc tức thì
 
   const available = useMemo(
     () => filtered.filter((e) => !addedIds.has(e.id)),
     [filtered, addedIds]
   );
 
-  // Nút load more còn khả dụng nếu số đã tải < tổng trên server
-  const canLoadMore = allExercises.length < total && page < totalPages;
+  // Nút load more còn khả dụng nếu số đã tải < tổng trên server VÀ KHÔNG CÓ TRUY VẤN SEARCH
+  // (Vì endpoint search không có phân trang)
+  const canLoadMore = allExercises.length < total && page < totalPages && !debouncedQuery; 
 
   // ====== ACTIONS ======
   const onAdd = (item) => {
@@ -114,7 +126,6 @@ export default function ExercisePickerPage({ onChangeSelected }) {
     if (onChangeSelected) onChangeSelected(added);
   }, [added, onChangeSelected]);
 
-  // ====== RENDER ======
   return (
     <Box sx={{ width: "100%", pt: 10 }}>
       {/* Header: title left, search right */}

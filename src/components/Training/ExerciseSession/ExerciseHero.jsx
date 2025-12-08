@@ -10,7 +10,6 @@ export default function ExerciseHero({
   nextName,
   onPrev,
   onNext,
-  // 👇 props mới để kiểm soát kích thước
   maxWidth = 720,            // ví dụ: 560, 640, 720, 900...
   aspect = 56.25,            // 16:9 = 56.25; 4:3 = 75; 1:1 = 100
 }) {

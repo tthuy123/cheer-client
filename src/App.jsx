@@ -25,45 +25,65 @@ import NewCheckOff from './pages/Checkoff/NewCheckOff.jsx';
 import CheckOffReview from './pages/Checkoff/CheckOffReview.jsx';
 import CheckOffTeamData from './pages/Checkoff/CheckOffTeamData.jsx';
 
+import { useSelector } from "react-redux";
+import { Navigate } from 'react-router-dom';
 
+import ProtectedRoute from './components/ProtectedRoute'; // Điều chỉnh path cho đúng
 function App() {
+  const token = useSelector((s) => s.auth.token);
+  console.log("token in app", token);
+  
 
   return (
     <>
     <BrowserRouter>
       <Routes>
-          <Route index element={<HomePage/>}/>
+          {/* 1. ĐƯỜNG DẪN ĐĂNG NHẬP KHÔNG CẦN BẢO VỆ */}
           <Route path='/login' element={<LoginPage />} />
-          <Route path='/home' element={<HomePage />} />
-          <Route path='/training/strength' element={<StrengthPage />} />
-          <Route path='/training/strength/new' element={<CreateProgram />} />
-          <Route path='/training/strength/program' element={<ProgramEditor />} />
-          <Route
-          path='/programs/:programId/exercises/:programExerciseId'
-          element={<ExerciseSessionPage />}
-        />
-          <Route path='/training/team-training-log' element={<TeamTrainingLog />} />
-          <Route path='/measurement/new' element={<NewMeasurement />} />
-          <Route path='/measurement/bar' element={<MeasurementBar />} />
-          <Route path='/training/bar' element={<TrainingBar />} />
-          <Route path="/measurement/top-performance-page" element={<TopPerformancePage />} />
-          <Route path="/measurement/team-data" element={<TeamData />} />
 
-          /* Measurement */
-          <Route path='/measurement/new' element={<NewMeasurement  />} />
-
-          /*Checkoff*/
-          <Route path='/check-off/new' element={<NewCheckOff />} />
-          <Route path='/check-off/review' element={<CheckOffReview />} />
-          <Route path='/check-off/team-data' element={<CheckOffTeamData />} />
-
-          {/* <Route path='/test7' element={<CreateProgram />} /> */}
-          {/* <Route path='/test2' element={<DropSelectMeas />} /> */}
-          {/* <Route path='/test4' element={<ProgressChart />} /> */}
-          {/* <Route path='/test4' element={<ProgressChart />} /> */}
-
-
+          {/* 2. CÁC ĐƯỜNG DẪN CẦN BẢO VỆ (SỬ DỤNG ProtectedRoute) */}
           
+          {/* Tuyến gốc / và /home đều được bảo vệ và chỉ cần 1 trong 2 */}
+          <Route index element={<Navigate to="/home" replace />} /> {/* Chuyển / sang /home */}
+
+          <Route path='/home' element={
+              <ProtectedRoute>
+                <HomePage />
+              </ProtectedRoute>
+          } />
+          
+          <Route path='/training/strength' element={
+              <ProtectedRoute>
+                <StrengthPage />
+              </ProtectedRoute>
+          } />
+
+          <Route path='/training/strength/new' element={
+              <ProtectedRoute>
+                <CreateProgram />
+              </ProtectedRoute>
+          } />
+          
+          {/* Áp dụng tương tự cho TẤT CẢ các trang nội bộ còn lại: */}
+          <Route path='/training/strength/program' element={<ProtectedRoute><ProgramEditor /></ProtectedRoute>} />
+          <Route
+            path='/programs/:programId/exercises/:programExerciseId'
+            element={<ProtectedRoute><ExerciseSessionPage /></ProtectedRoute>}
+          />
+          <Route path='/training/team-training-log' element={<ProtectedRoute><TeamTrainingLog /></ProtectedRoute>} />
+          
+          /* Measurement */
+          <Route path='/measurement/new' element={<ProtectedRoute><NewMeasurement /></ProtectedRoute>} />
+          <Route path='/measurement/bar' element={<ProtectedRoute><MeasurementBar /></ProtectedRoute>} />
+          <Route path='/training/bar' element={<ProtectedRoute><TrainingBar /></ProtectedRoute>} />
+          <Route path="/measurement/top-performance-page" element={<ProtectedRoute><TopPerformancePage /></ProtectedRoute>} />
+          <Route path="/measurement/team-data" element={<ProtectedRoute><TeamData /></ProtectedRoute>} />
+
+          /* Checkoff */
+          <Route path='/check-off/new' element={<ProtectedRoute><NewCheckOff /></ProtectedRoute>} />
+          <Route path='/check-off/review' element={<ProtectedRoute><CheckOffReview /></ProtectedRoute>} />
+          <Route path='/check-off/team-data' element={<ProtectedRoute><CheckOffTeamData /></ProtectedRoute>} />
+
       </Routes>
     </BrowserRouter>
     </>

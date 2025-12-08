@@ -21,6 +21,7 @@ const authSlice = createSlice({
             state.token = null;
             state.role = null; // Clear role when token is cleared
             state.display_name = null;
+            state.user_id = null;
             state.phone = null;
             state.address = null;
             localStorage.removeItem("token");

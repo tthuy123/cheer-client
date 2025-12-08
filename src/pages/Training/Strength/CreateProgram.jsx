@@ -40,11 +40,9 @@ const CreateProgram = () => {
         </Typography>
       </Box>
 
-      {/* Nội dung */}
-      {/* Yêu cầu ProgramType gọi onChange(typeValue) */}
+
       <ProgramType onChange={setProgramType} />
 
-      {/* Yêu cầu ExercisePicker gọi onChangeSelected(list) */}
       <ExercisePicker onChangeSelected={setSelectedExercises} />
 
       <Button

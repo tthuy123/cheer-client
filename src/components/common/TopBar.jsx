@@ -3,8 +3,16 @@ import { AppBar, Toolbar, IconButton, Menu, MenuItem, Typography } from "@mui/ma
 import MenuIcon from "@mui/icons-material/Menu";
 import AccountCircle from "@mui/icons-material/AccountCircle";
 
+// <--- THÊM IMPORTS NÀY --->
+import { useDispatch } from "react-redux";
+import { useNavigate } from "react-router-dom";
+import { clearToken } from "../../redux/store"; // Giả sử clearState được export từ đây
+
 const TopBar = () => {
   const [anchorEl, setAnchorEl] = useState(null);
+  // <--- KHAI BÁO HOOKS --->
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
 
   const handleMenu = (event) => {
     setAnchorEl(event.currentTarget);
@@ -12,6 +20,13 @@ const TopBar = () => {
 
   const handleClose = () => {
     setAnchorEl(null);
+  };
+
+  // <--- HÀM XỬ LÝ LOGOUT --->
+  const handleLogout = () => {
+    dispatch(clearToken()); // Xóa token, role, user_id khỏi Redux store
+    handleClose(); // Đóng menu
+    navigate("/login"); // Điều hướng về trang đăng nhập (hoặc trang chính)
   };
 
   return (
@@ -54,7 +69,8 @@ const TopBar = () => {
             <MenuItem onClick={handleClose}>Privacy Policy</MenuItem>
             <MenuItem onClick={handleClose}>Terms and Conditions</MenuItem>
             <MenuItem onClick={handleClose}>About Us</MenuItem>
-            <MenuItem onClick={handleClose} sx={{ color: "red" }}>
+            {/* <--- GẮN handleLogout VÀO ĐÂY ---> */}
+            <MenuItem onClick={handleLogout} sx={{ color: "red" }}>
               Logout
             </MenuItem>
           </Menu>
