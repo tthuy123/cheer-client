@@ -100,9 +100,14 @@ const ProgressChart = ({ data }) => {
   // Dữ liệu cho biểu đồ: Recharts cần CŨ -> MỚI
   const chartData = [...history].reverse().map((item) => ({
     value: Number(item.result), // GIỮ GIÁ TRỊ THÔ (giây nếu minutes)
-    label: new Date(item.date).toLocaleDateString('en-US', {
+    // THAY ĐỔI: Sử dụng ngày và giờ đầy đủ làm nhãn để mỗi điểm là DUY NHẤT.
+    label: new Date(item.date).toLocaleString('en-US', {
+      year: 'numeric',
       month: '2-digit',
-      day: '2-digit'
+      day: '2-digit',
+      hour: '2-digit', 
+      minute: '2-digit',
+      hour12: false
     }),
   }));
 
@@ -116,9 +121,6 @@ const ProgressChart = ({ data }) => {
     result: formatResult(item.result, unit), // mm:ss nếu minutes
     unit: unit, // GIỮ nguyên chữ "minutes"
   }));
-
-  // (optional) Custom tick nếu bạn muốn, ở đây để trống vì không dùng
-  const renderXAxisTick = () => null;
 
   return (
     <Box sx={{ width: '100%' }}>
@@ -156,6 +158,14 @@ const ProgressChart = ({ data }) => {
               axisLine={false}
               tick={{ fontSize: 12, fill: '#666' }}
               interval="preserveStartEnd"
+              // THAY ĐỔI: Chỉ hiển thị ngày (MM/DD) trên trục X để giữ gọn
+              tickFormatter={(fullLabel) => {
+                // fullLabel có định dạng MM/DD/YYYY, HH:MM
+                // Tách lấy MM/DD/YYYY
+                const parts = fullLabel.split(',')[0]; 
+                // Cắt lấy MM/DD
+                return parts.substring(0, 5);
+              }}
             />
             <YAxis
               tickLine={false}
@@ -167,6 +177,8 @@ const ProgressChart = ({ data }) => {
               domain={['dataMin - 1', 'dataMax + 1']}
             />
             <Tooltip 
+              // THAY ĐỔI: Thêm nhãn ngày/giờ đầy đủ vào Tooltip
+              labelFormatter={(label) => `Test Date: ${label}`}
               formatter={(value) => [formatResult(value, unit), 'Result']}
             />
             <Line
